@@ -65,7 +65,9 @@ class OrderController extends Controller
             $order['min_delivery_time'] =  $order->store ? (int) explode('-', $order->store?->delivery_time)[0] ?? 0 : 0;
             $order['max_delivery_time'] =  $order->store ? (int) explode('-', $order->store?->delivery_time)[1] ?? 0 : 0;
             $order['offline_payment'] =  isset($order->offline_payments) ? Helpers::offline_payment_formater($order->offline_payments) : null;
-
+            //worksaar start
+            $order['admin_phone'] = Helpers::get_business_settings('phone');
+            //worksaar end
             unset($order['offline_payments']);
             unset($order['details']);
         } else {
