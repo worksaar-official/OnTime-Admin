@@ -2619,7 +2619,50 @@
         }
         $(document).ready(function () {
             // Event handler for 'canceled-status' click
-
+            //worksaar start
+            $('.canceled-status').on('click', function () {
+                Swal.fire({
+                    title: '{{ translate('messages.Are you sure ?') }}',
+                    text: '{{ translate('messages.You_want_to_cancel_this_order?') }}',
+                    type: 'warning',
+                    showCancelButton: true,
+                    cancelButtonColor: 'default',
+                    confirmButtonColor: '#FC6A57',
+                    cancelButtonText: '{{ translate('messages.No') }}',
+                    confirmButtonText: '{{ translate('messages.Yes') }}',
+                    reverseButtons: true,
+                    html:
+                        `<div class="text-left">
+                            <label for="reason" class="form-label">{{ translate('messages.reason') }}</label>
+                            <select class="form-control js-select2-custom mx-1" name="reason" id="reason" required>
+                                <option value="">{{ translate('messages.select_reason') }}</option>
+                                @foreach ($reasons as $r)
+                                    <option value="{{ $r->reason }}">{{ $r->reason }}</option>
+                                @endforeach
+                            </select>
+                        </div>`,
+                    onOpen: function () {
+                        $('.js-select2-custom').select2({
+                            minimumResultsForSearch: 5,
+                            width: '100%',
+                            placeholder: "{{ translate('messages.select_reason') }}",
+                            language: "en",
+                        });
+                    },
+                    preConfirm: () => {
+                        const reason = Swal.getPopup().querySelector('#reason').value
+                        if (!reason) {
+                            Swal.showValidationMessage(`{{ translate('messages.please_select_reason') }}`)
+                        }
+                        return { reason: reason }
+                    }
+                }).then((result) => {
+                    if (result.value) {
+                         location.href = '{!! route('admin.order.status', ['id' => $order['id'], 'order_status' => 'canceled']) !!}&reason=' + result.value.reason;
+                    }
+                })
+            });
+               //worksaar end
         });
     </script>
     <script>
