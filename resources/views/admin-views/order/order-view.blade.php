@@ -298,7 +298,7 @@
                                 @endif
                                 @if ($order->order_attachment)
                                     @php
-                                        $order_images = json_decode($order->order_attachment,true);
+                                        $order_images = json_decode($order->order_attachment,true) ?? [];
                                     @endphp
                                     <h5 class="text-dark">
                                         <span>{{ translate('messages.prescription') }}</span> <span>:</span>
@@ -1254,8 +1254,7 @@
                                                         href="javascript:">{{ translate('messages.confirmed') }}</a>
                                                         @if ($order->order_type != 'parcel')
                                                             @if ($order->store && $order->store->module->module_type == 'food')
-                                                                <a class="dropdown-item {{ $order['order_status'] == 'processing' ? 'active' : '' }} order_status_change_alert" data-url="{{ route('admin.order.status', ['id' => $order['id'], 'order_status' => 'processing']) }}" data-message="{{ translate('Change status to cooking ?') }}" data-processing={{ $max_processing_time }}
-                                                                href="javascript:">{{ translate('messages.processing') }}</a>
+                                                                <a href="javascript:" class="dropdown-item {{ $order['order_status'] == 'processing' ? 'active' : '' }} order_status_change_alert" data-url="{{ route('admin.order.status', ['id' => $order['id'], 'order_status' => 'processing']) }}" data-message="{{ translate('Change status to cooking ?') }}" data-processing="{{ $order->processing_time ?? 30 }}">{{ translate('messages.processing') }}</a>
                                                             @else
                                                                 <a class="dropdown-item {{ $order['order_status'] == 'processing' ? 'active' : '' }} route-alert"
                                                                 data-url="{{ route('admin.order.status', ['id' => $order['id'], 'order_status' => 'processing']) }}" data-message="{{ translate('Change status to processing ?') }}"
@@ -1271,7 +1270,7 @@
                                                         <a class="dropdown-item {{ $order['order_status'] == 'delivered' ? 'active' : '' }} route-alert"
                                                         data-url="{{ route('admin.order.status', ['id' => $order['id'], 'order_status' => 'delivered']) }}" data-message="{{ translate('Change status to delivered (payment status will be paid if not)?') }}"
                                                         href="javascript:">{{ translate('messages.delivered') }}</a>
-                                                        <a class="dropdown-item {{ $order['order_status'] == 'canceled' ? 'active' : '' }} canceled-status">{{ translate('messages.canceled') }}</a>
+                                                        <a class="dropdown-item {{ $order['order_status'] == 'canceled' ? 'active' : '' }}" data-toggle="modal" data-target="#offline_payment_cancel_orders">{{ translate('messages.canceled') }}</a>
                                                     </div>
 
                                                 </div>
@@ -2619,50 +2618,7 @@
         }
         $(document).ready(function () {
             // Event handler for 'canceled-status' click
-            //worksaar start
-            $('.canceled-status').on('click', function () {
-                Swal.fire({
-                    title: '{{ translate('messages.Are you sure ?') }}',
-                    text: '{{ translate('messages.You_want_to_cancel_this_order?') }}',
-                    type: 'warning',
-                    showCancelButton: true,
-                    cancelButtonColor: 'default',
-                    confirmButtonColor: '#FC6A57',
-                    cancelButtonText: '{{ translate('messages.No') }}',
-                    confirmButtonText: '{{ translate('messages.Yes') }}',
-                    reverseButtons: true,
-                    html:
-                        `<div class="text-left">
-                            <label for="reason" class="form-label">{{ translate('messages.reason') }}</label>
-                            <select class="form-control js-select2-custom mx-1" name="reason" id="reason" required>
-                                <option value="">{{ translate('messages.select_reason') }}</option>
-                                @foreach ($reasons as $r)
-                                    <option value="{{ $r->reason }}">{{ $r->reason }}</option>
-                                @endforeach
-                            </select>
-                        </div>`,
-                    onOpen: function () {
-                        $('.js-select2-custom').select2({
-                            minimumResultsForSearch: 5,
-                            width: '100%',
-                            placeholder: "{{ translate('messages.select_reason') }}",
-                            language: "en",
-                        });
-                    },
-                    preConfirm: () => {
-                        const reason = Swal.getPopup().querySelector('#reason').value
-                        if (!reason) {
-                            Swal.showValidationMessage(`{{ translate('messages.please_select_reason') }}`)
-                        }
-                        return { reason: reason }
-                    }
-                }).then((result) => {
-                    if (result.value) {
-                         location.href = '{!! route('admin.order.status', ['id' => $order['id'], 'order_status' => 'canceled']) !!}&reason=' + result.value.reason;
-                    }
-                })
-            });
-               //worksaar end
+
         });
     </script>
     <script>

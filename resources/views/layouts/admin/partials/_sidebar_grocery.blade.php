@@ -261,17 +261,6 @@
                                 </span>
                                     </a>
                                 </li>
-
-                                {{-- <li class="nav-item {{ Request::is('admin/refund/settings') ? 'active' : '' }}">
-                                   <a class="nav-link " href="{{ route('admin.refund.refund_settings') }}"
-                                       title="{{ translate('refund_settings') }}">
-                                       <span class="tio-circle nav-indicator-icon"></span>
-                                       <span class="text-truncate sidebar--badge-container">
-                                           {{ translate('refund_settings') }}
-
-                                       </span>
-                                   </a>
-                               </li> --}}
                             </ul>
                         </li>
                         <!-- Order refund End-->

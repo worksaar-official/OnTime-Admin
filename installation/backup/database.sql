@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.2
+-- version 5.2.1deb3
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1:3306
--- Generation Time: Nov 17, 2025 at 04:31 AM
--- Server version: 8.0.36-28
--- PHP Version: 8.1.32
+-- Host: localhost:3306
+-- Generation Time: Feb 16, 2026 at 12:07 PM
+-- Server version: 8.0.45-0ubuntu0.24.04.1
+-- PHP Version: 8.4.14
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `mart-install`
+-- Database: `6ammart_install`
 --
 
 -- --------------------------------------------------------
@@ -679,7 +679,8 @@ CREATE TABLE `campaigns` (
   `end_date` date DEFAULT NULL,
   `start_time` time DEFAULT NULL,
   `end_time` time DEFAULT NULL,
-  `module_id` bigint UNSIGNED NOT NULL
+  `module_id` bigint UNSIGNED NOT NULL,
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1220,6 +1221,43 @@ INSERT INTO `data_settings` (`id`, `key`, `value`, `type`, `created_at`, `update
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `deliveryman_loyalty_point_histories`
+--
+
+CREATE TABLE `deliveryman_loyalty_point_histories` (
+  `id` bigint UNSIGNED NOT NULL,
+  `delivery_man_id` bigint UNSIGNED NOT NULL,
+  `transaction_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transaction_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `point_conversion_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `point` decimal(24,3) NOT NULL DEFAULT '0.000',
+  `converted_amount` decimal(24,3) NOT NULL DEFAULT '0.000',
+  `reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `deliveryman_referral_histories`
+--
+
+CREATE TABLE `deliveryman_referral_histories` (
+  `id` bigint UNSIGNED NOT NULL,
+  `delivery_man_id` bigint UNSIGNED NOT NULL,
+  `referrer_id` bigint UNSIGNED DEFAULT NULL,
+  `transaction_id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `refer_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'referral',
+  `amount` decimal(24,3) NOT NULL DEFAULT '0.000',
+  `reference` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `delivery_histories`
 --
 
@@ -1266,7 +1304,7 @@ CREATE TABLE `delivery_men` (
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `identity_number` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `identity_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `identity_image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `identity_image` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `image` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `auth_token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1283,7 +1321,10 @@ CREATE TABLE `delivery_men` (
   `application_status` enum('approved','denied','pending') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'approved',
   `order_count` int UNSIGNED NOT NULL DEFAULT '0',
   `assigned_order_count` int UNSIGNED NOT NULL DEFAULT '0',
-  `vehicle_id` bigint UNSIGNED DEFAULT NULL
+  `vehicle_id` bigint UNSIGNED DEFAULT NULL,
+  `loyalty_point` double DEFAULT '0',
+  `ref_code` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ref_by` bigint UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1847,6 +1888,24 @@ CREATE TABLE `item_nutrition` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `item_seo_data`
+--
+
+CREATE TABLE `item_seo_data` (
+  `id` bigint UNSIGNED NOT NULL,
+  `item_id` bigint UNSIGNED DEFAULT NULL,
+  `temp_item_id` bigint UNSIGNED DEFAULT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `meta_data` json DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `item_tag`
 --
 
@@ -2142,7 +2201,18 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (216, '2025_09_21_174228_add_sender_note_to_withdraw_requests', 56),
 (217, '2025_09_25_181108_rename_bank_name_to_rejection_note_in_vendors_table', 56),
 (218, '2023_05_14_104308_create_react_promotional_banners_table', 57),
-(219, '2025_10_23_160409_create_f_a_q_s_table', 57);
+(219, '2025_10_23_160409_create_f_a_q_s_table', 57),
+(220, '2025_11_27_132943_update_identity_image_column_in_delivery_men_table', 58),
+(221, '2025_11_27_141050_create_deliveryman_loyalty_point_histories_table', 58),
+(222, '2025_11_30_093640_create_deliveryman_referral_histories_table', 58),
+(223, '2025_11_09_014948_create_page_seo_data_table', 59),
+(224, '2026_01_08_121542_add_meta_data_column_to_stores_table', 59),
+(225, '2026_01_08_150355_create_item_seo_data_table', 59),
+(226, '2026_01_12_101427_add_is_default_col_to_zones_table', 59),
+(227, '2026_01_21_103359_add_slug_to_modules_table', 59),
+(228, '2026_01_21_112637_add_slug_column_to_campaigns_table', 59),
+(229, '2026_01_27_141523_create_parcel_return_fees_table', 59),
+(230, '2026_01_27_141620_create_parcel_penalty_fees_table', 59);
 
 -- --------------------------------------------------------
 
@@ -2162,15 +2232,16 @@ CREATE TABLE `modules` (
   `icon` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `theme_id` int NOT NULL DEFAULT '1',
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `all_zone_service` tinyint(1) NOT NULL DEFAULT '0'
+  `all_zone_service` tinyint(1) NOT NULL DEFAULT '0',
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `modules`
 --
 
-INSERT INTO `modules` (`id`, `module_name`, `module_type`, `thumbnail`, `status`, `stores_count`, `created_at`, `updated_at`, `icon`, `theme_id`, `description`, `all_zone_service`) VALUES
-(1, 'Demo Module', 'grocery', '2024-11-19-673c37a92984b.png', 1, 1, '2023-08-15 23:31:17', '2024-11-18 19:00:57', '2024-04-20-662398cb7f2e7.png', 1, '<p><strong>We make grocery shopping more interesting.</strong><br />\r\nFind the greatest deals from the grocery stores near you.<br />\r\n<br />\r\n<strong>Nature &amp; Organic Products</strong><br />\r\nBring Nature into your home.<br />\r\n<br />\r\n<strong>Stay home &amp; get your daily needs from our shop</strong><br />\r\nStart You&#39;r Daily Shopping with 6amMart</p>', 0);
+INSERT INTO `modules` (`id`, `module_name`, `module_type`, `thumbnail`, `status`, `stores_count`, `created_at`, `updated_at`, `icon`, `theme_id`, `description`, `all_zone_service`, `slug`) VALUES
+(1, 'Demo Module', 'grocery', '2024-11-19-673c37a92984b.png', 1, 1, '2023-08-15 23:31:17', '2024-11-18 19:00:57', '2024-04-20-662398cb7f2e7.png', 1, '<p><strong>We make grocery shopping more interesting.</strong><br />\r\nFind the greatest deals from the grocery stores near you.<br />\r\n<br />\r\n<strong>Nature &amp; Organic Products</strong><br />\r\nBring Nature into your home.<br />\r\n<br />\r\n<strong>Stay home &amp; get your daily needs from our shop</strong><br />\r\nStart You&#39;r Daily Shopping with 6amMart</p>', 0, 'demo-module');
 
 -- --------------------------------------------------------
 
@@ -2823,6 +2894,25 @@ CREATE TABLE `order_transactions` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `page_seo_data`
+--
+
+CREATE TABLE `page_seo_data` (
+  `id` bigint UNSIGNED NOT NULL,
+  `page_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `image` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `meta_data` json DEFAULT NULL,
+  `status` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `parcel_cancellations`
 --
 
@@ -2892,6 +2982,39 @@ CREATE TABLE `parcel_delivery_instructions` (
   `id` bigint UNSIGNED NOT NULL,
   `instruction` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `parcel_penalty_fees`
+--
+
+CREATE TABLE `parcel_penalty_fees` (
+  `id` bigint UNSIGNED NOT NULL,
+  `transaction_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `delivery_man_id` bigint UNSIGNED NOT NULL,
+  `order_id` bigint UNSIGNED NOT NULL,
+  `amount` decimal(10,5) NOT NULL DEFAULT '0.00000',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `parcel_return_fees`
+--
+
+CREATE TABLE `parcel_return_fees` (
+  `id` bigint UNSIGNED NOT NULL,
+  `transaction_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `delivery_man_id` bigint UNSIGNED DEFAULT NULL,
+  `user_id` bigint UNSIGNED NOT NULL,
+  `order_id` bigint UNSIGNED NOT NULL,
+  `amount` decimal(10,5) NOT NULL DEFAULT '0.00000',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -3418,6 +3541,7 @@ CREATE TABLE `stores` (
   `meta_title` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `meta_description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `meta_image` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `meta_data` json DEFAULT NULL,
   `announcement` tinyint(1) NOT NULL DEFAULT '0',
   `announcement_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `store_business_model` enum('none','commission','subscription','unsubscribed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'commission',
@@ -3433,8 +3557,8 @@ CREATE TABLE `stores` (
 -- Dumping data for table `stores`
 --
 
-INSERT INTO `stores` (`id`, `name`, `phone`, `email`, `logo`, `latitude`, `longitude`, `address`, `footer_text`, `minimum_order`, `comission`, `schedule_order`, `status`, `vendor_id`, `created_at`, `updated_at`, `free_delivery`, `rating`, `cover_photo`, `delivery`, `take_away`, `item_section`, `tax`, `zone_id`, `reviews_section`, `active`, `off_day`, `gst`, `self_delivery_system`, `pos_system`, `minimum_shipping_charge`, `delivery_time`, `veg`, `non_veg`, `order_count`, `total_order`, `module_id`, `order_place_to_schedule_interval`, `featured`, `per_km_shipping_charge`, `prescription_order`, `slug`, `maximum_shipping_charge`, `cutlery`, `meta_title`, `meta_description`, `meta_image`, `announcement`, `announcement_message`, `store_business_model`, `package_id`, `pickup_zone_id`, `comment`, `tin`, `tin_expire_date`, `tin_certificate_image`) VALUES
-(1, 'Demo Store', '+101511111111', 'demo.store@gmail.com', '2024-11-19-673c404ae469c.png', '23.81695886557418', '90.36934144046135', 'House, road', NULL, 0.00, NULL, 0, 1, 1, '2023-08-15 23:45:01', '2025-02-18 17:36:18', 0, NULL, '2024-11-19-673c404ae633e.png', 1, 1, 1, 5.00, 1, 1, 1, ' ', NULL, 0, 0, 0.00, '30-40 min', 1, 1, 0, 0, 1, 0, 1, 0.000, 0, 'demo-store', NULL, 0, NULL, NULL, NULL, 0, NULL, 'commission', NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO `stores` (`id`, `name`, `phone`, `email`, `logo`, `latitude`, `longitude`, `address`, `footer_text`, `minimum_order`, `comission`, `schedule_order`, `status`, `vendor_id`, `created_at`, `updated_at`, `free_delivery`, `rating`, `cover_photo`, `delivery`, `take_away`, `item_section`, `tax`, `zone_id`, `reviews_section`, `active`, `off_day`, `gst`, `self_delivery_system`, `pos_system`, `minimum_shipping_charge`, `delivery_time`, `veg`, `non_veg`, `order_count`, `total_order`, `module_id`, `order_place_to_schedule_interval`, `featured`, `per_km_shipping_charge`, `prescription_order`, `slug`, `maximum_shipping_charge`, `cutlery`, `meta_title`, `meta_description`, `meta_image`, `meta_data`, `announcement`, `announcement_message`, `store_business_model`, `package_id`, `pickup_zone_id`, `comment`, `tin`, `tin_expire_date`, `tin_certificate_image`) VALUES
+(1, 'Demo Store', '+101511111111', 'demo.store@gmail.com', '2024-11-19-673c404ae469c.png', '23.81695886557418', '90.36934144046135', 'House, road', NULL, 0.00, NULL, 0, 1, 1, '2023-08-15 23:45:01', '2025-02-18 17:36:18', 0, NULL, '2024-11-19-673c404ae633e.png', 1, 1, 1, 5.00, 1, 1, 1, ' ', NULL, 0, 0, 0.00, '30-40 min', 1, 1, 0, 0, 1, 0, 1, 0.000, 0, 'demo-store', NULL, 0, NULL, NULL, NULL, NULL, 0, NULL, 'commission', NULL, NULL, NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -4230,15 +4354,16 @@ CREATE TABLE `zones` (
   `increased_delivery_fee_status` tinyint(1) NOT NULL DEFAULT '0',
   `increase_delivery_charge_message` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `offline_payment` tinyint(1) NOT NULL DEFAULT '0',
-  `display_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL
+  `display_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `zones`
 --
 
-INSERT INTO `zones` (`id`, `name`, `coordinates`, `status`, `created_at`, `updated_at`, `store_wise_topic`, `customer_wise_topic`, `deliveryman_wise_topic`, `cash_on_delivery`, `digital_payment`, `increased_delivery_fee`, `increased_delivery_fee_status`, `increase_delivery_charge_message`, `offline_payment`, `display_name`) VALUES
-(1, 'Demo Zone', 0x0000000001030000000100000006000000d8b95578f0965640804b97f820d6374014ba5508809556403a236f336ed2374017ba55d83696564031240701bacd3740d5b95598ce985640f47608c3f7cd374015ba55f87c995640ce86cbe863d23740d8b95578f0965640804b97f820d63740, 1, '2023-08-15 23:35:04', '2023-08-15 23:35:44', 'zone_1_store', 'zone_1_customer', 'zone_1_delivery_man', 1, 1, 0.00, 0, NULL, 0, NULL);
+INSERT INTO `zones` (`id`, `name`, `coordinates`, `status`, `created_at`, `updated_at`, `store_wise_topic`, `customer_wise_topic`, `deliveryman_wise_topic`, `cash_on_delivery`, `digital_payment`, `increased_delivery_fee`, `increased_delivery_fee_status`, `increase_delivery_charge_message`, `offline_payment`, `display_name`, `is_default`) VALUES
+(1, 'Demo Zone', 0x0000000001030000000100000006000000d8b95578f0965640804b97f820d6374014ba5508809556403a236f336ed2374017ba55d83696564031240701bacd3740d5b95598ce985640f47608c3f7cd374015ba55f87c995640ce86cbe863d23740d8b95578f0965640804b97f820d63740, 1, '2023-08-15 23:35:04', '2023-08-15 23:35:44', 'zone_1_store', 'zone_1_customer', 'zone_1_delivery_man', 1, 1, 0.00, 0, NULL, 0, NULL, 0);
 
 --
 -- Indexes for dumped tables
@@ -4464,6 +4589,22 @@ ALTER TABLE `data_settings`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `deliveryman_loyalty_point_histories`
+--
+ALTER TABLE `deliveryman_loyalty_point_histories`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `deliveryman_loyalty_point_histories_delivery_man_id_index` (`delivery_man_id`);
+
+--
+-- Indexes for table `deliveryman_referral_histories`
+--
+ALTER TABLE `deliveryman_referral_histories`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `deliveryman_referral_histories_transaction_id_unique` (`transaction_id`),
+  ADD KEY `deliveryman_referral_histories_delivery_man_id_index` (`delivery_man_id`),
+  ADD KEY `deliveryman_referral_histories_referrer_id_index` (`referrer_id`);
+
+--
 -- Indexes for table `delivery_histories`
 --
 ALTER TABLE `delivery_histories`
@@ -4642,6 +4783,14 @@ ALTER TABLE `item_generic_names`
 --
 ALTER TABLE `item_nutrition`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `item_seo_data`
+--
+ALTER TABLE `item_seo_data`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `item_seo_data_item_id_index` (`item_id`),
+  ADD KEY `item_seo_data_temp_item_id_index` (`temp_item_id`);
 
 --
 -- Indexes for table `item_tag`
@@ -4835,6 +4984,13 @@ ALTER TABLE `order_transactions`
   ADD KEY `order_transactions_module_id_foreign` (`module_id`);
 
 --
+-- Indexes for table `page_seo_data`
+--
+ALTER TABLE `page_seo_data`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `page_seo_data_page_name_unique` (`page_name`);
+
+--
 -- Indexes for table `parcel_cancellations`
 --
 ALTER TABLE `parcel_cancellations`
@@ -4860,6 +5016,25 @@ ALTER TABLE `parcel_categories`
 --
 ALTER TABLE `parcel_delivery_instructions`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `parcel_penalty_fees`
+--
+ALTER TABLE `parcel_penalty_fees`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `parcel_penalty_fees_transaction_id_index` (`transaction_id`),
+  ADD KEY `parcel_penalty_fees_delivery_man_id_index` (`delivery_man_id`),
+  ADD KEY `parcel_penalty_fees_order_id_index` (`order_id`);
+
+--
+-- Indexes for table `parcel_return_fees`
+--
+ALTER TABLE `parcel_return_fees`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `parcel_return_fees_transaction_id_index` (`transaction_id`),
+  ADD KEY `parcel_return_fees_delivery_man_id_index` (`delivery_man_id`),
+  ADD KEY `parcel_return_fees_user_id_index` (`user_id`),
+  ADD KEY `parcel_return_fees_order_id_index` (`order_id`);
 
 --
 -- Indexes for table `password_resets`
@@ -5367,6 +5542,18 @@ ALTER TABLE `data_settings`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=160;
 
 --
+-- AUTO_INCREMENT for table `deliveryman_loyalty_point_histories`
+--
+ALTER TABLE `deliveryman_loyalty_point_histories`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `deliveryman_referral_histories`
+--
+ALTER TABLE `deliveryman_referral_histories`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `delivery_histories`
 --
 ALTER TABLE `delivery_histories`
@@ -5535,6 +5722,12 @@ ALTER TABLE `item_nutrition`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `item_seo_data`
+--
+ALTER TABLE `item_seo_data`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `item_tag`
 --
 ALTER TABLE `item_tag`
@@ -5562,7 +5755,7 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=220;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=231;
 
 --
 -- AUTO_INCREMENT for table `modules`
@@ -5697,6 +5890,12 @@ ALTER TABLE `order_transactions`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `page_seo_data`
+--
+ALTER TABLE `page_seo_data`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `parcel_cancellations`
 --
 ALTER TABLE `parcel_cancellations`
@@ -5718,6 +5917,18 @@ ALTER TABLE `parcel_categories`
 -- AUTO_INCREMENT for table `parcel_delivery_instructions`
 --
 ALTER TABLE `parcel_delivery_instructions`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `parcel_penalty_fees`
+--
+ALTER TABLE `parcel_penalty_fees`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `parcel_return_fees`
+--
+ALTER TABLE `parcel_return_fees`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --

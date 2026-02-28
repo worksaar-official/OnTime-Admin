@@ -68,6 +68,9 @@ use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\Encoders\WebpEncoder;
 use App\Exceptions\InvalidUploadException;
+use App\Exceptions\ZoneModuleException;
+use App\Models\ParcelCancellation;
+use App\Models\ParcelReturnFees;
 use Illuminate\Http\UploadedFile;
 
 
@@ -218,6 +221,7 @@ class Helpers
         }
         $data['food_variations'] = $data_variation;
         $data['store_name'] = $data->store->name;
+        $data['store_slug'] = $data->store->slug;
         $data['is_campaign'] = $data->store?->campaigns_count > 0 ? 1 : 0;
         $data['module_type'] = $data->module->module_type;
         $data['zone_id'] = $data->store->zone_id;
@@ -274,6 +278,7 @@ class Helpers
             return [
                 'id' => (int) $item->id,
                 'name' => $item->title ?? $item->name,
+                'slug' => $item->slug,
                 'image_full_url' => $item->image_full_url,
                 'price' => $item->price,
                 'veg' => $item->veg,
@@ -390,6 +395,13 @@ class Helpers
                 $item['tax_data'] = $item?->taxVats ? $item?->taxVats()->pluck('tax_id')->toArray() : [];
 
                 $item['tax_data'] = \Modules\TaxModule\Entities\Tax::whereIn('id', $item['tax_data'])->get(['id', 'name', 'tax_rate']);
+                if($item->module->module_type == 'ecommerce') {
+                    $item['meta_title'] = $item?->seoData?->title;
+                    $item['meta_description'] = $item?->seoData?->description;
+                    $item['meta_image'] = $item?->seoData?->imageFullUrl;
+                    $item['meta_data'] = $item?->seoData?->meta_data;
+                }
+
                 unset($item['taxVats']);
 
 
@@ -489,6 +501,12 @@ class Helpers
             $data['tax_data'] = $data?->taxVats ? $data?->taxVats()->pluck('tax_id')->toArray() : [];
 
             $data['tax_data'] = \Modules\TaxModule\Entities\Tax::whereIn('id', $data['tax_data'])->get(['id', 'name', 'tax_rate']);
+            if($data->module->module_type == 'ecommerce') {
+                    $data['meta_title'] = $data?->seoData?->title;
+                    $data['meta_description'] = $data?->seoData?->description;
+                    $data['meta_image'] = $data?->seoData?->imageFullUrl;
+                    $data['meta_data'] = $data?->seoData?->meta_data;
+                }
             unset($data['taxVats']);
 
 
@@ -617,7 +635,12 @@ class Helpers
                 $item['generic_name'] = $item?->generic ? GenericName::whereIn('id', $item?->generic->pluck('id'))->pluck('generic_name') : null;
                 $item['tax_ids'] = $item?->taxVats ? $item?->taxVats()->pluck('tax_id')->toArray() : [];
 
-
+                if($item->module->module_type == 'ecommerce') {
+                    $item['meta_title'] = $item?->seoData?->title;
+                    $item['meta_description'] = $item?->seoData?->description;
+                    $item['meta_image'] = $item?->seoData?->imageFullUrl;
+                    $item['meta_data'] = $item?->seoData?->meta_data;
+                }
                 unset($item['taxVats']);
                 unset($item['nutritions']);
                 unset($item['allergies']);
@@ -732,6 +755,13 @@ class Helpers
             $data['generic_name'] = $data?->generic ? GenericName::whereIn('id', $data?->generic->pluck('id'))->pluck('generic_name') : null;
 
             $data['tax_ids'] = $data?->taxVats ? $data?->taxVats()->pluck('tax_id')->toArray() : [];
+
+            if($data->module->module_type == 'ecommerce') {
+                $data['meta_title'] = $data?->seoData?->title;
+                $data['meta_description'] = $data?->seoData?->description;
+                $data['meta_image'] = $data?->seoData?->imageFullUrl;
+                $data['meta_data'] = $data?->seoData?->meta_data;
+            }
 
             unset($data['taxVats']);
 
@@ -866,8 +896,10 @@ class Helpers
                 $item['avg_rating'] = $ratings['rating'];
                 $item['rating_count'] = $ratings['total'];
                 $item['positive_rating'] = $ratings['positive_rating'];
-                $item['total_items'] = $item['items_count'];
+                $item['total_items'] = $item['items_count']??$item?->items()->approved()->count();
                 $item['total_campaigns'] = $item['campaigns_count'];
+                $item['min'] = (float) $item->items()->active()->min('price');
+                $item['max'] = (float) $item->items()->active()->max('price');
                 $item['is_recommended'] = false;
                 $item['halal_tag_status'] = (bool) $item?->storeConfig?->halal_tag_status;
                 $extra_packaging_data = self::get_business_settings('extra_packaging_data');
@@ -906,8 +938,10 @@ class Helpers
             $data['avg_rating'] = $ratings['rating'];
             $data['rating_count'] = $ratings['total'];
             $data['positive_rating'] = $ratings['positive_rating'];
-            $data['total_items'] = $data['items_count'];
+            $data['total_items'] = $data['items_count']??$data?->items()->approved()->count();
             $data['total_campaigns'] = $data['campaigns_count'];
+            $data['min'] = (float) $data->items()->active()->min('price');
+            $data['max'] = (float) $data->items()->active()->max('price');
             $data['current_opening_time'] = self::getNextOpeningTime($data['schedules']) ?? 'closed';
             unset($data['items_count']);
             unset($data['campaigns_count']);
@@ -989,7 +1023,7 @@ class Helpers
                     }
                 }
 
-                $item['delivery_address'] = $item->delivery_address ? json_decode($item->delivery_address, true) : null;
+                $item['delivery_address'] = is_array($item->delivery_address )? $item->delivery_address : json_decode($item->delivery_address, true);
                 $item['details_count'] = (int) $item->details->count();
                 $item['min_delivery_time'] = $item->store ? (int) explode('-', $item->store?->delivery_time)[0] ?? 0 : 0;
                 $item['max_delivery_time'] = $item->store ? (int) explode('-', $item->store?->delivery_time)[1] ?? 0 : 0;
@@ -1025,10 +1059,10 @@ class Helpers
                 $data['store_logo_full_url'] = null;
                 $data['min_delivery_time'] = null;
                 $data['max_delivery_time'] = null;
-                $item['vendor_id'] = null;
-                $item['chat_permission'] = null;
-                $item['review_permission'] = null;
-                $item['store_business_model'] = null;
+                $data['vendor_id'] = null;
+                $data['chat_permission'] = null;
+                $data['review_permission'] = null;
+                $data['store_business_model'] = null;
             }
 
             $data['item_campaign'] = 0;
@@ -1037,11 +1071,14 @@ class Helpers
                     $data['item_campaign'] = 1;
                 }
             }
-            $data['delivery_address'] = $data->delivery_address ? json_decode($data->delivery_address, true) : null;
+            $data['delivery_address'] = is_array($data->delivery_address )? $data->delivery_address : json_decode($data->delivery_address, true);
             $data['details_count'] = (int) $data->details->count();
 
             unset($data['details']);
         }
+
+        $data = gettype($data) == 'object' ? $data->toArray() : $data;
+
         return $data;
     }
 
@@ -1977,11 +2014,11 @@ class Helpers
 
             try {
                 if ($order->order_status == 'confirmed' && $order->payment_method != 'cash_on_delivery' && config('mail.status') && Helpers::get_mail_status('place_order_mail_status_user') == '1' && $order->is_guest == 0 && Helpers::getNotificationStatusData('customer', 'customer_order_notification', 'mail_status')) {
-                    Mail::to($order->customer->email)->send(new PlaceOrder($order->id));
+                    Mail::to($order->customer?->getRawOriginal('email'))->send(new PlaceOrder($order->id));
                 }
                 $order_verification_mail_status = Helpers::get_mail_status('order_verification_mail_status_user');
                 if ($order->order_status == 'pending' && config('order_delivery_verification') == 1 && config('mail.status') && $order_verification_mail_status == '1' && $order->is_guest == 0 && Helpers::getNotificationStatusData('customer', 'customer_delivery_verification', 'mail_status')) {
-                    Mail::to($order->customer->email)->send(new OrderVerificationMail($order->otp, $order->customer->f_name));
+                    Mail::to($order->customer?->getRawOriginal('email'))->send(new OrderVerificationMail($order->otp, $order->customer->f_name));
                 }
             } catch (\Exception $ex) {
                 info($ex->getMessage());
@@ -2464,6 +2501,7 @@ class Helpers
         foreach ($keys as $key) {
             $data[$key->key] = (bool) $key->value;
         }
+        $data['MAX_FILE_SIZE'] = self::maxUploadSizeMb();
         return $data;
     }
 
@@ -2954,7 +2992,7 @@ class Helpers
         return array_search($type, $data);
     }
 
-        public static function react_activation_check($react_domain, $react_license_code) {
+    public static function react_activation_check($react_domain, $react_license_code) {
                 return true;
             }
 
@@ -2973,6 +3011,7 @@ class Helpers
                 ]);
             }
         }
+
 
     public static function get_zones_name($zones)
     {
@@ -3684,28 +3723,28 @@ class Helpers
             if ($store->module->module_type !== 'rental' && config('mail.status')) {
 
                 if (self::get_mail_status('subscription_renew_mail_status_store') == '1' && $type == 'renew' && self::getNotificationStatusData('store', 'store_subscription_renew', 'mail_status', $store->id)) {
-                    Mail::to($store->email)->send(new SubscriptionRenewOrShift($type, $store->name));
+                    Mail::to($store?->getRawOriginal('email'))->send(new SubscriptionRenewOrShift($type, $store->name));
                 }
                 if (self::get_mail_status('subscription_shift_mail_status_store') == '1' && $type != 'renew' && self::getNotificationStatusData('store', 'store_subscription_shift', 'mail_status', $store->id)) {
-                    Mail::to($store->email)->send(new SubscriptionRenewOrShift($type, $store->name));
+                    Mail::to($store?->getRawOriginal('email'))->send(new SubscriptionRenewOrShift($type, $store->name));
                 }
                 if (self::get_mail_status('subscription_successful_mail_status_store') == '1' && self::getNotificationStatusData('store', 'store_subscription_success', 'mail_status', $store->id)) {
                     $url = route('subscription_invoice', ['id' => base64_encode($subscription_transaction->id)]);
-                    Mail::to($store->email)->send(new SubscriptionSuccessful($store->name, $url));
+                    Mail::to($store?->getRawOriginal('email'))->send(new SubscriptionSuccessful($store->name, $url));
                 }
 
 
             } elseif ($store->module->module_type == 'rental' && config('mail.status')) {
 
                 if (self::get_mail_status('rental_subscription_renew_mail_status_provider') == '1' && $type == 'renew' && self::getRentalNotificationStatusData('provider', 'provider_subscription_renew', 'mail_status', $store->id)) {
-                    Mail::to($store->email)->send(new ProviderSubscriptionRenewOrShift($type, $store->name));
+                    Mail::to($store?->getRawOriginal('email'))->send(new ProviderSubscriptionRenewOrShift($type, $store->name));
                 }
                 if (self::get_mail_status('rental_subscription_shift_mail_status_provider') == '1' && $type != 'renew' && self::getRentalNotificationStatusData('provider', 'provider_subscription_shift', 'mail_status', $store->id)) {
-                    Mail::to($store->email)->send(new ProviderSubscriptionRenewOrShift($type, $store->name));
+                    Mail::to($store?->getRawOriginal('email'))->send(new ProviderSubscriptionRenewOrShift($type, $store->name));
                 }
                 if (self::get_mail_status('rental_subscription_successful_mail_status_provider') == '1' && self::getRentalNotificationStatusData('provider', 'provider_subscription_success', 'mail_status', $store->id)) {
                     $url = route('subscription_invoice', ['id' => base64_encode($subscription_transaction->id)]);
-                    Mail::to($store->email)->send(new ProviderSubscriptionSuccessful($store->name, $url));
+                    Mail::to($store?->getRawOriginal('email'))->send(new ProviderSubscriptionSuccessful($store->name, $url));
                 }
             }
 
@@ -4033,14 +4072,12 @@ class Helpers
         foreach ($methods as $method) {
             $credentialsData = json_decode($method->$credentials);
             $additional_data = json_decode($method->additional_data);
-            if ($credentialsData?->status == 1) {
-                $data[] = [
+            $data[] = [
                     'gateway' => $method->key_name,
                     'gateway_title' => $additional_data?->gateway_title,
                     'gateway_image' => $additional_data?->gateway_image,
                     'gateway_image_full_url' => Helpers::get_full_url('payment_modules/gateway_image', $additional_data?->gateway_image, $additional_data?->storage ?? 'public')
                 ];
-            }
         }
         return $data;
 
@@ -4733,6 +4770,122 @@ class Helpers
         }
 
         return explode('/', $mimeType)[1] ?? '';
+    }
+
+    public static function seoPageList()
+    {
+        return [
+            'home_page', 'top_offers_page', 'brands_page', 'search_page', 'vehicle_search_page', 'about_us_page', 'contact_us_page', 'store_join_page', 'deliveryman_join_page', 'terms_and_conditions_page', 'privacy_policy_page', 'refund_policy_page', 'cancellation_policy_page', 'shipping_policy_page' ,'latest_store_page','flash_sales','popular_store_page' ,
+        ];
+    }
+
+    public static function formatMetaData(array $input, $oldMeta = [])
+    {
+        $meta = $oldMeta ?? [];
+        $meta['meta_index'] = ($input['meta_index'] ?? 1);
+        $meta['meta_no_follow'] = $input['meta_no_follow'] ?? null;
+        $meta['meta_no_image_index'] = $input['meta_no_image_index'] ?? null;
+        $meta['meta_no_archive'] = $input['meta_no_archive'] ?? null;
+        $meta['meta_no_snippet'] = $input['meta_no_snippet'] ?? null;
+        $meta['meta_max_snippet'] = (int) ($input['meta_max_snippet'] ?? 0);
+        $meta['meta_max_snippet_value'] = isset($input['meta_max_snippet_value']) ? (int) $input['meta_max_snippet_value'] : null;
+        $meta['meta_max_video_preview'] = (int) ($input['meta_max_video_preview'] ?? 0);
+        $meta['meta_max_video_preview_value'] = isset($input['meta_max_video_preview_value']) ? (int) $input['meta_max_video_preview_value'] : null;
+        $meta['meta_max_image_preview'] = (int) ($input['meta_max_image_preview'] ?? 0);
+        $meta['meta_max_image_preview_value'] = $input['meta_max_image_preview_value'] ?? null;
+
+        return $meta;
+    }
+
+    public static function getDecimalPlaces()
+    {
+        $decimalPlaces = (int) config('round_up_to_digit');
+         return number_format(pow(10, -$decimalPlaces), $decimalPlaces, '.', '');
+
+    }
+
+    public static function getLanguages()
+    {
+        return LANGUAGES;
+    }
+
+    public static function getCountries()
+    {
+        return COUNTIRES;
+    }
+
+    public static function setZoneIds($request){
+
+        if (!$request->hasHeader('zoneId') || empty($request->header('zoneId'))) {
+            $zone = Zone::where('status',1)->where('is_default',1)->first() ?? Zone::first();
+
+            if(!$zone){
+                throw new ZoneModuleException(translate('No zone is available'));
+            }
+
+            if($request->hasHeader('moduleId')){
+                $moduleId = getModuleId($request->header('moduleId'));
+                if(!in_array($moduleId, $zone->modules()?->pluck('module_id')?->toArray())){
+                    throw new ZoneModuleException(translate('Currently this module is available'));
+                }
+            }
+            $request->headers->set('zoneId', json_encode([$zone->id]));
+        }
+
+        return true;
+    }
+
+
+
+    public static function addPreviousParcelReturnFees(){
+          if (ParcelReturnFees::query()->doesntExist()) {
+            ParcelCancellation::where('return_fee_payment_status', 'paid')
+                ->where('return_fee', '>', 0)
+                ->with('order:id,delivery_man_id,user_id')
+                ->chunk(500, function ($cancellations) {
+
+                    foreach ($cancellations as $cancellation) {
+
+                        $returnFeeLog = ParcelReturnFees::create([
+                            'order_id'        => $cancellation->order_id,
+                            'delivery_man_id' => $cancellation->order->delivery_man_id ?? null,
+                            'user_id'         => $cancellation->order->user_id,
+                            'amount'      => $cancellation->return_fee,
+                        ]);
+
+                        $returnFeeLog->update([
+                            'transaction_id' => self::generate_transaction_id($returnFeeLog)
+                        ]);
+                    }
+                });
+        }
+    }
+    public static function maxUploadSizeMb(): int
+    {
+        try {
+            $serverLimit = self::sizeToMb(ini_get('post_max_size'));
+            return min(MAX_FILE_SIZE, $serverLimit);
+        } catch (\Throwable $e) {
+            return MAX_FILE_SIZE;
+        }
+    }
+
+    public static function sizeToMb($value): int
+    {
+        $value = trim((string) $value);
+        $unit = strtolower(substr($value, -1));
+        $num = (int) $value;
+
+        switch ($unit) {
+            case 'g':
+                return $num * 1024;
+            case 'm':
+                return $num;
+            case 'k':
+                return (int) ceil($num / 1024);
+            default:
+                return $num;
+        }
     }
 
 }
