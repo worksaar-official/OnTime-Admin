@@ -329,7 +329,7 @@
     @endif
 
         <div class="tour-guide-items">
-            <a href="https://youtube.com/playlist?list=PLLFMbDpKMZBxgtX3n3rKJvO5tlU8-ae2Y" target="_blank"
+            <a href="#" target="_blank"
                class="d-flex align-items-center gap-10px">
                 <span class="text-capitalize fs-14 text-title">{{ translate('Turotial') }}</span>
             </a>
