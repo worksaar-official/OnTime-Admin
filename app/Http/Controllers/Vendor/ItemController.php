@@ -1137,6 +1137,9 @@ class ItemController extends Controller
                         return back();
                     }
 
+                    $sheet_variations = data_get($collection, 'Variations');
+                    $sheet_variations = is_string($sheet_variations) ? trim($sheet_variations) : $sheet_variations;
+                    $sheet_variations = ($sheet_variations === '' || $sheet_variations === null) ? json_encode([]) : $sheet_variations;
 
                     array_push($data, [
                         'id' => $item_id + $key + 1,
@@ -1154,8 +1157,8 @@ class ItemController extends Controller
                         'discount_type' => $collection['DiscountType'],
                         'available_time_starts' => $collection['AvailableTimeStarts'] ?? '00:00:00',
                         'available_time_ends' => $collection['AvailableTimeEnds'] ?? '23:59:59',
-                        'variations' => $module_type == 'food' ? json_encode([]) : $collection['Variations'] ?? json_encode([]),
-                        'food_variations' => $module_type == 'food' ? $collection['Variations'] ?? json_encode([]) : json_encode([]),
+                        'variations' => $module_type == 'food' ? json_encode([]) : $sheet_variations,
+                        'food_variations' => $module_type == 'food' ? $sheet_variations : json_encode([]),
                         'add_ons' => $collection['AddOns'] ? ($collection['AddOns'] == "" ? json_encode([]) : $collection['AddOns']) : json_encode([]),
                         'attributes' => $collection['Attributes'] ? ($collection['Attributes'] == "" ? json_encode([]) : $collection['Attributes']) : json_encode([]),
                         'store_id' => Helpers::get_store_id(),
@@ -1327,7 +1330,9 @@ class ItemController extends Controller
                     return back();
                 }
 
-
+                $sheet_variations = data_get($collection, 'Variations');
+                $sheet_variations = is_string($sheet_variations) ? trim($sheet_variations) : $sheet_variations;
+                $sheet_variations = ($sheet_variations === '' || $sheet_variations === null) ? json_encode([]) : $sheet_variations;
 
                 array_push($data, [
                     'id' => $collection['Id'],
@@ -1344,8 +1349,8 @@ class ItemController extends Controller
                     'discount_type' => $collection['DiscountType'],
                     'available_time_starts' => $collection['AvailableTimeStarts'] ?? '00:00:00',
                     'available_time_ends' => $collection['AvailableTimeEnds'] ?? '23:59:59',
-                    'variations' => $module_type == 'food' ? json_encode([]) : $collection['Variations'] ?? json_encode([]),
-                    'food_variations' => $module_type == 'food' ? $collection['Variations'] ?? json_encode([]) : json_encode([]),
+                    'variations' => $module_type == 'food' ? json_encode([]) : $sheet_variations,
+                    'food_variations' => $module_type == 'food' ? $sheet_variations : json_encode([]),
                     'add_ons' => $collection['AddOns'] ? ($collection['AddOns'] == "" ? json_encode([]) : $collection['AddOns']) : json_encode([]),
                     'attributes' => $collection['Attributes'] ? ($collection['Attributes'] == "" ? json_encode([]) : $collection['Attributes']) : json_encode([]),
                     'store_id' => Helpers::get_store_id(),
