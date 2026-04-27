@@ -29,4 +29,8 @@ jobs:
           ssh ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
             cd /home/ontime-dev-cpanel/htdocs/dev.cpanel.ontime.city
             git pull origin main
+            composer install --prefer-dist --optimize-autoloader
+            php artisan optimize:clear
+            php artisan migrate
+            php artisan serve
           EOF
