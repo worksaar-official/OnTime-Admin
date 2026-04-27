@@ -10,6 +10,7 @@ deploy:
 runs-on: ubuntu-latest
 timeout-minutes: 15
 
+```
 steps:
   - name: Checkout repo
     uses: actions/checkout@v4
@@ -29,13 +30,9 @@ steps:
       ssh ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
         cd /home/ontime-dev-cpanel/htdocs/dev.cpanel.ontime.city
 
-        # Fix only composer.lock conflict (keep other files safe)
         git restore composer.lock || git checkout -- composer.lock
-
-        # Pull latest changes
         git pull origin main
 
-        # Install/update dependencies
         composer install --no-dev --optimize-autoloader
-
       EOF
+```
