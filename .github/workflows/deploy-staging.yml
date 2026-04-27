@@ -32,5 +32,4 @@ jobs:
             composer install --prefer-dist --optimize-autoloader
             php artisan optimize:clear
             php artisan migrate
-            php artisan serve
           EOF
