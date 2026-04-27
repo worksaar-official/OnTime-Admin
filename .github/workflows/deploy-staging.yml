@@ -1,3 +1,4 @@
+```yaml
 name: Deploy to Main (SSH)
 
 on:
@@ -24,12 +25,33 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }} >> ~/.ssh/known_hosts
 
-      - name: SSH deploy
+      - name: Deploy via SSH
         run: |
           ssh ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
+            set -e
+
             cd /home/ontime-dev-cpanel/htdocs/dev.cpanel.ontime.city
-            git pull origin main
-            composer install --prefer-dist --optimize-autoloader
-            php artisan optimize:clear
-            php artisan migrate
+
+            echo "🚀 Starting deployment..."
+
+            # 🔥 Force clean state (fixes composer.lock issue)
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+
+            echo "📦 Installing dependencies..."
+            composer install --no-dev --optimize-autoloader
+
+            echo "🧹 Clearing cache..."
+            php artisan config:clear || true
+            php artisan cache:clear || true
+            php artisan view:clear || true
+            php artisan route:clear || true
+
+            echo "⚡ Rebuilding cache..."
+            php artisan config:cache --force
+            php artisan route:cache --force
+            php artisan view:cache --force
+
+            echo "✅ Deployment completed!"
           EOF
