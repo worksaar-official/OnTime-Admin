@@ -114,6 +114,13 @@ class ZoneService
                     ) {
                         return ['flag' => 'max_delivery_charge', 'module_id' => $moduleId];
                     }
+                } elseif ($type === 'tier') {
+                    if (empty($data['minimum_shipping_charge'])) {
+                        return ['flag' => 'distance_required', 'module_id' => $moduleId];
+                    }
+                    if (empty($data['tiered_delivery_charge'])) {
+                        return ['flag' => 'tier_required', 'module_id' => $moduleId];
+                    }
                 } else {
                     return ['flag' => 'unknown_type', 'module_id' => $moduleId];
                 }
