@@ -582,19 +582,19 @@
                                                     ? distancMileResult * js_per_km_charge
                                                     : js_min_shipping;
 
-                                                // Overlay: Tier-based calculation if applicable (Always accumulative as per user request)
+                                                // Overlay: Tier-based calculation if applicable (Incremental Per-KM)
                                                 if (js_delivery_type === 'tier' && js_tiers.length > 0) {
                                                     var temp_charge = 0;
                                                     js_tiers.forEach(function(tier) {
-                                                        if (distancMileResult > tier.start) {
-                                                            temp_charge += parseFloat(tier.charge);
+                                                        var t_start = parseFloat(tier.start) || 0;
+                                                        var t_end = parseFloat(tier.end) || Infinity;
+                                                        var t_rate = parseFloat(tier.charge) || 0;
+                                                        
+                                                        if (distancMileResult > t_start) {
+                                                            var distance_in_tier = Math.min(distancMileResult, t_end) - t_start;
+                                                            temp_charge += (distance_in_tier * t_rate);
                                                         }
                                                     });
-                                                    
-                                                    // Fallback for extreme distance beyond tiers (already covered by summing, but keeping consistency)
-                                                    if (temp_charge === 0 && distancMileResult > js_tiers[js_tiers.length - 1].end) {
-                                                        temp_charge = parseFloat(js_tiers[js_tiers.length - 1].charge);
-                                                    }
                                                     
                                                     original_delivery_charge = Math.max(temp_charge, js_min_shipping);
                                                 }
