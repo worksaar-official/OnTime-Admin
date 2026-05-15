@@ -194,6 +194,12 @@ class StoreDisbursementController extends Controller
     public function statusById($id,$status)
     {
         $disbursement=DisbursementDetails::find($id);
+
+        if($disbursement->status == $status){
+            Toastr::warning(translate('messages.already_in_this_status'));
+            return back();
+        }
+
         $wallet=  StoreWallet::where('vendor_id',$disbursement->store->vendor_id)->first();
 
         if ((string) $wallet->total_earning <  (string) ($wallet->total_withdrawn + $wallet->pending_withdraw) ) {

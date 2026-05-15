@@ -186,6 +186,11 @@ class DeliveryManDisbursementController extends Controller
 
         $disbursement=DisbursementDetails::find($id);
 
+        if($disbursement->status == $status){
+            Toastr::warning(translate('messages.already_in_this_status'));
+            return back();
+        }
+
             if ((string) $disbursement->delivery_man?->wallet?->total_earning <  (string)($disbursement->delivery_man?->wallet?->total_withdrawn + $disbursement->delivery_man?->wallet?->pending_withdraw) ) {
                 Toastr::error(translate('messages.Balance_mismatched_total_earning_is_too_low_for').' '.$disbursement->delivery_man?->f_name);
                 return back();

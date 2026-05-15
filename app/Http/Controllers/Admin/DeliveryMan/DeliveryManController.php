@@ -766,6 +766,12 @@ class DeliveryManController extends BaseController
             'note' => 'max:200',
         ]);
         $withdraw = WithdrawRequest::findOrFail($id);
+
+        if ($withdraw->approved == 1 || $withdraw->approved == 2) {
+            Toastr::warning(translate('messages.already_processed_this_request'));
+            return redirect()->back();
+        }
+
         $withdraw->approved = $request->approved;
         $withdraw->transaction_note = $request['note'];
 
