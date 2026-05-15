@@ -582,21 +582,18 @@
                                                     ? distancMileResult * js_per_km_charge
                                                     : js_min_shipping;
 
-                                                // Overlay: Tier-based calculation if applicable (Incremental Per-KM)
+                                                // Overlay: Tier-based calculation if applicable (Total Distance * Matching Tier Rate)
                                                 if (js_delivery_type === 'tier' && js_tiers.length > 0) {
-                                                    var temp_charge = 0;
+                                                    var matching_tier_rate = 0;
                                                     js_tiers.forEach(function(tier) {
                                                         var t_start = parseFloat(tier.start) || 0;
                                                         var t_end = parseFloat(tier.end) || Infinity;
-                                                        var t_rate = parseFloat(tier.charge) || 0;
-                                                        
                                                         if (distancMileResult > t_start) {
-                                                            var distance_in_tier = Math.min(distancMileResult, t_end) - t_start;
-                                                            temp_charge += (distance_in_tier * t_rate);
+                                                            matching_tier_rate = parseFloat(tier.charge) || 0;
                                                         }
                                                     });
                                                     
-                                                    original_delivery_charge = Math.max(temp_charge, js_min_shipping);
+                                                    original_delivery_charge = Math.max((distancMileResult * matching_tier_rate), js_min_shipping);
                                                 }
 
                                                 var delivery_amount = original_delivery_charge + (Number(extra_charge) || 0);
