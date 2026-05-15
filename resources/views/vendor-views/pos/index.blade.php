@@ -482,25 +482,20 @@
                                                 ? distancMileResult * js_per_km_charge
                                                 : js_min_shipping;
 
-                                            // Overlay: Tier-based calculation if applicable
+                                            // Overlay: Tier-based calculation if applicable (Always accumulative as per user request)
                                             if (js_delivery_type === 'tier' && js_tiers.length > 0) {
                                                 var temp_charge = 0;
-                                                if (js_accumulative) {
-                                                    js_tiers.forEach(function(tier) {
-                                                        if (distancMileResult > tier.start) {
-                                                            temp_charge += parseFloat(tier.charge);
-                                                        }
-                                                    });
-                                                } else {
-                                                    js_tiers.forEach(function(tier) {
-                                                        if (distancMileResult >= tier.start && distancMileResult <= tier.end) {
-                                                            temp_charge = parseFloat(tier.charge);
-                                                        }
-                                                    });
-                                                    if (temp_charge === 0 && distancMileResult > js_tiers[js_tiers.length - 1].end) {
-                                                        temp_charge = parseFloat(js_tiers[js_tiers.length - 1].charge);
+                                                js_tiers.forEach(function(tier) {
+                                                    if (distancMileResult > tier.start) {
+                                                        temp_charge += parseFloat(tier.charge);
                                                     }
+                                                });
+                                                
+                                                // Fallback for extreme distance beyond tiers
+                                                if (temp_charge === 0 && distancMileResult > js_tiers[js_tiers.length - 1].end) {
+                                                    temp_charge = parseFloat(js_tiers[js_tiers.length - 1].charge);
                                                 }
+                                                
                                                 original_delivery_charge = Math.max(temp_charge, js_min_shipping);
                                             }
 

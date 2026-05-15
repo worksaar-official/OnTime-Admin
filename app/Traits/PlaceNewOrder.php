@@ -901,26 +901,17 @@ trait PlaceNewOrder
                 if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') {
                     $distance = $request->distance ?? 0;
                     $tiers = $module_wise_delivery_charge->pivot->tiered_delivery_charge ?? [];
-                    $is_accumulative = $module_wise_delivery_charge->pivot->tier_wise_delivery_charge ?? false;
                     $temp_charge = 0;
+                    // Always sum up all tiers passed
+                    foreach ($tiers as $tier) {
+                        if ($distance > $tier['start']) {
+                            $temp_charge += (float) $tier['charge'];
+                        }
+                    }
 
-                    if ($is_accumulative) {
-                        foreach ($tiers as $tier) {
-                            if ($distance > $tier['start']) {
-                                $temp_charge += (float) $tier['charge'];
-                            }
-                        }
-                    } else {
-                        foreach ($tiers as $tier) {
-                            if ($distance >= $tier['start'] && $distance <= $tier['end']) {
-                                $temp_charge = (float) $tier['charge'];
-                                break;
-                            }
-                        }
-                        // Fallback to last tier if distance exceeds all tiers
-                        if ($temp_charge == 0 && count($tiers) > 0 && $distance > end($tiers)['end']) {
-                            $temp_charge = (float) end($tiers)['charge'];
-                        }
+                    // Fallback for extreme distance beyond tiers
+                    if ($temp_charge == 0 && count($tiers) > 0 && $distance > end($tiers)['end']) {
+                        $temp_charge = (float) end($tiers)['charge'];
                     }
 
                     $minimum_shipping_charge = $module_wise_delivery_charge->pivot->minimum_shipping_charge ?? 0;
