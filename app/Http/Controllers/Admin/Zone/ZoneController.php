@@ -225,9 +225,15 @@ class ZoneController extends BaseController
                 return back()->withInput();
             }
         }
-        $filteredModuleData = collect($request->module_data)
-            ->only($request->module_id)
-            ->toArray();
+        $filteredModuleData = [];
+        if($request->module_id){
+            foreach ($request->module_id as $moduleId) {
+                $data = $request->module_data[$moduleId] ?? [];
+                $data['tier_wise_delivery_charge'] = isset($data['tier_wise_delivery_charge']) ? 1 : 0;
+                $filteredModuleData[$moduleId] = $data;
+            }
+        }
+
         $this->zoneRepo->zoneModuleSetupUpdate(id: $id, data: $paymentData, moduleData: $filteredModuleData);
 
         Toastr::success(translate('messages.zone_module_updated_successfully'));
