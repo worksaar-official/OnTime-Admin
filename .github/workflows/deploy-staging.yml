@@ -35,6 +35,9 @@ jobs:
             # Pull latest changes
             git pull origin main
 
+            # migrate changes in db
+            php artisan migrate --force
+
             # Install/update dependencies
             composer install --no-dev --optimize-autoloader
           EOF
