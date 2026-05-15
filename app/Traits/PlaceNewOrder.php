@@ -898,13 +898,46 @@ trait PlaceNewOrder
                 $vehicle_id = null;
                 $increased = 0;
             } elseif ($module_wise_delivery_charge) {
-                $per_km_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->per_km_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
-                $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
-                $maximum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->maximum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
+                if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') {
+                    $distance = $request->distance ?? 0;
+                    $tiers = $module_wise_delivery_charge->pivot->tiered_delivery_charge ?? [];
+                    $is_accumulative = $module_wise_delivery_charge->pivot->tier_wise_delivery_charge ?? false;
+                    $temp_charge = 0;
+
+                    if ($is_accumulative) {
+                        foreach ($tiers as $tier) {
+                            if ($distance > $tier['start']) {
+                                $temp_charge += (float) $tier['charge'];
+                            }
+                        }
+                    } else {
+                        foreach ($tiers as $tier) {
+                            if ($distance >= $tier['start'] && $distance <= $tier['end']) {
+                                $temp_charge = (float) $tier['charge'];
+                                break;
+                            }
+                        }
+                        // Fallback to last tier if distance exceeds all tiers
+                        if ($temp_charge == 0 && count($tiers) > 0 && $distance > end($tiers)['end']) {
+                            $temp_charge = (float) end($tiers)['charge'];
+                        }
+                    }
+
+                    $minimum_shipping_charge = $module_wise_delivery_charge->pivot->minimum_shipping_charge ?? 0;
+                    $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
+
+                    $delivery_charge = max($temp_charge, $minimum_shipping_charge);
+                    if ($maximum_shipping_charge > 0 && $delivery_charge > $maximum_shipping_charge) {
+                        $delivery_charge = $maximum_shipping_charge;
+                    }
+                    $original_delivery_charge = $delivery_charge;
+
+                } else {
+                    $per_km_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->per_km_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
+                    $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
+                    $maximum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->maximum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
+                }
             } else {
-                // $per_km_shipping_charge = 0;
-                // $minimum_shipping_charge = 0;
-                // $maximum_shipping_charge = 0;
                 return [
                     'vehicle_id' => null,
                     'original_delivery_charge' => 0,
@@ -912,21 +945,15 @@ trait PlaceNewOrder
                 ];
             }
 
-            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
-            if ($maximum_shipping_charge >= $minimum_shipping_charge && $original_delivery_charge > $maximum_shipping_charge) {
-                $original_delivery_charge = $maximum_shipping_charge;
-            } else {
-                $original_delivery_charge = $original_delivery_charge;
+            if (! isset($delivery_charge)) {
+                $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
+                if ($maximum_shipping_charge >= $minimum_shipping_charge && $original_delivery_charge > $maximum_shipping_charge) {
+                    $original_delivery_charge = $maximum_shipping_charge;
+                }
+
+                $delivery_charge = $original_delivery_charge;
             }
 
-            if (! isset($delivery_charge)) {
-                $delivery_charge = ($request->distance * $per_km_shipping_charge > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
-                if ($maximum_shipping_charge >= $minimum_shipping_charge && $delivery_charge > $maximum_shipping_charge) {
-                    $delivery_charge = $maximum_shipping_charge;
-                } else {
-                    $delivery_charge = $delivery_charge;
-                }
-            }
             $original_delivery_charge = $original_delivery_charge + $extra_charges;
             $delivery_charge = $delivery_charge + $extra_charges;
         } else {

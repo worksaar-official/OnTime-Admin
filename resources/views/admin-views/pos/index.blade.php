@@ -362,8 +362,8 @@
             let map = new google.maps.Map(document.getElementById("map"), {
                 zoom: 13,
                 center: {
-                    lat: {{ $store ? $store['latitude'] : '23.757989' }},
-                    lng: {{ $store ? $store['longitude'] : '90.360587' }}
+                    lat: {{ $store ? $store['latitude'] ?? '23.757989' : '23.757989' }},
+                    lng: {{ $store ? $store['longitude'] ?? '90.360587' : '90.360587' }}
                 },
                 mapId: mapId
             });
@@ -506,10 +506,10 @@
                                         const service = new google.maps.DistanceMatrixService();
                                         // build request
                                         const origin1 = {
-                                            lat: {{ $store['latitude'] }},
-                                            lng: {{ $store['longitude'] }}
+                                            lat: {{ $store['latitude'] ?? 0 }},
+                                            lng: {{ $store['longitude'] ?? 0 }}
                                         };
-                                        const origin2 = "{{ $store->address }}";
+                                        const origin2 = "{{ addslashes($store->address) }}";
                                         const destinationA = address;
                                         const destinationB = {
                                             lat: coordinates['lat'],
@@ -538,105 +538,95 @@
                                             document.getElementById('address').value =
                                                 response.destinationAddresses[1];
                                             <?php
-                                            $module_wise_delivery_charge = $store->zone->modules()->where('modules.id', $store->module_id)->first();
+                                            $module_wise_delivery_charge = $store->zone ? $store->zone->modules()->where('modules.id', $store->module_id)->first() : null;
                                             if ($store->sub_self_delivery) {
                                                 $per_km_shipping_charge = $store?->per_km_shipping_charge ?? 0;
                                                 $minimum_shipping_charge = $store?->minimum_shipping_charge ?? 0;
                                                 $maximum_shipping_charge = $store?->maximum_shipping_charge ?? 0;
-                                            
+                                                $delivery_charge_type = 'distance';
+                                                $tiered_delivery_charge = [];
+                                                $tier_wise_delivery_charge = 0;
                                                 $self_delivery_status = 1;
                                             } else {
                                                 $self_delivery_status = 0;
                                             
                                                 if ($module_wise_delivery_charge) {
-                                                    $per_km_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0 : $module_wise_delivery_charge->pivot->fixed_shipping_charge ?? 0;
-                                                    $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge ?? 0 : $module_wise_delivery_charge->pivot->fixed_shipping_charge ?? 0;
-                                                    $maximum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0 : $module_wise_delivery_charge->pivot->fixed_shipping_charge ?? 0;
+                                                    $delivery_charge_type = $module_wise_delivery_charge->pivot->delivery_charge_type ?? 'distance';
+                                                    $tiered_delivery_charge = $module_wise_delivery_charge->pivot->tiered_delivery_charge ?? [];
+                                                    $tier_wise_delivery_charge = $module_wise_delivery_charge->pivot->tier_wise_delivery_charge ?? 0;
+                                                    $per_km_shipping_charge = $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0;
+                                                    $minimum_shipping_charge = $module_wise_delivery_charge->pivot->minimum_shipping_charge ?? 0;
+                                                    $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
                                                 } else {
+                                                    $delivery_charge_type = 'distance';
+                                                    $tiered_delivery_charge = [];
+                                                    $tier_wise_delivery_charge = 0;
                                                     $per_km_shipping_charge = (float) \App\Models\BusinessSetting::where(['key' => 'per_km_shipping_charge'])->first()->value;
                                                     $minimum_shipping_charge = (float) \App\Models\BusinessSetting::where(['key' => 'minimum_shipping_charge'])->first()->value;
                                                     $maximum_shipping_charge = 0;
                                                 }
                                             }
-                                            
                                             ?>
+
+                                            // Declare all PHP-injected values as safe JS variables first
+                                            var js_per_km_charge = Number('{{ $per_km_shipping_charge ?? 0 }}') || 0;
+                                            var js_min_shipping  = Number('{{ $minimum_shipping_charge ?? 0 }}') || 0;
+                                            var js_max_shipping  = Number('{{ $maximum_shipping_charge ?? 0 }}') || 0;
+                                            var js_delivery_type = '{{ $delivery_charge_type ?? 'distance' }}';
+                                            var js_tiers         = {!! json_encode($tiered_delivery_charge ?? []) !!};
+                                            var js_accumulative  = Number('{{ $tier_wise_delivery_charge ?? 0 }}') || 0;
+
+                                            function calcDeliveryFee(distancMileResult, extra_charge) {
+                                                // Baseline: Original distance-based calculation (your original code)
+                                                var original_delivery_charge = (distancMileResult * js_per_km_charge > js_min_shipping)
+                                                    ? distancMileResult * js_per_km_charge
+                                                    : js_min_shipping;
+
+                                                // Overlay: Tier-based calculation if applicable
+                                                if (js_delivery_type === 'tier' && js_tiers.length > 0) {
+                                                    var temp_charge = 0;
+                                                    if (js_accumulative) {
+                                                        js_tiers.forEach(function(tier) {
+                                                            if (distancMileResult > tier.start) {
+                                                                temp_charge += parseFloat(tier.charge);
+                                                            }
+                                                        });
+                                                    } else {
+                                                        js_tiers.forEach(function(tier) {
+                                                            if (distancMileResult >= tier.start && distancMileResult <= tier.end) {
+                                                                temp_charge = parseFloat(tier.charge);
+                                                            }
+                                                        });
+                                                        if (temp_charge === 0 && distancMileResult > js_tiers[js_tiers.length - 1].end) {
+                                                            temp_charge = parseFloat(js_tiers[js_tiers.length - 1].charge);
+                                                        }
+                                                    }
+                                                    original_delivery_charge = Math.max(temp_charge, js_min_shipping);
+                                                }
+
+                                                var delivery_amount = original_delivery_charge + (Number(extra_charge) || 0);
+                                                if (js_max_shipping > js_min_shipping && delivery_amount > js_max_shipping) {
+                                                    delivery_amount = js_max_shipping;
+                                                }
+                                                return Math.round((delivery_amount + Number.EPSILON) * 100) / 100;
+                                            }
 
                                             $.get({
                                                 url: '{{ route('admin.pos.extra_charge') }}',
                                                 dataType: 'json',
                                                 data: {
                                                     distancMileResult: distancMileResult,
-                                                    self_delivery_status: {{ $self_delivery_status }},
+                                                    self_delivery_status: {{ $self_delivery_status ?? 0 }},
                                                 },
                                                 success: function(data) {
-                                                    let extra_charge = data;
-                                                    let original_delivery_charge =
-                                                        (distancMileResult *
-                                                            {{ $per_km_shipping_charge }} >
-                                                            {{ $minimum_shipping_charge }}
-                                                        ) ?
-                                                        distancMileResult *
-                                                        {{ $per_km_shipping_charge }} :
-                                                        {{ $minimum_shipping_charge }};
-                                                    let delivery_amount = (
-                                                        {{ $maximum_shipping_charge }} >
-                                                        {{ $minimum_shipping_charge }} &&
-                                                        original_delivery_charge +
-                                                        extra_charge >
-                                                        {{ $maximum_shipping_charge }} ?
-                                                        {{ $maximum_shipping_charge }} :
-                                                        original_delivery_charge +
-                                                        extra_charge);
-                                                    let delivery_charge =
-                                                        Math.round((
-                                                                delivery_amount +
-                                                                Number
-                                                                .EPSILON) *
-                                                            100) / 100;
-                                                    document.getElementById(
-                                                            'delivery_fee')
-                                                        .value =
-                                                        delivery_charge;
-                                                    $('#delivery_fee')
-                                                        .siblings('strong')
-                                                        .html(
-                                                            delivery_charge +
-                                                            '{{ \App\CentralLogics\Helpers::currency_symbol() }}'
-                                                        );
-
+                                                    var delivery_charge = calcDeliveryFee(distancMileResult, data);
+                                                    document.getElementById('delivery_fee').value = delivery_charge;
+                                                    jQuery('#delivery_fee').siblings('strong').html(delivery_charge + '{{ \App\CentralLogics\Helpers::currency_symbol() }}');
                                                 },
                                                 error: function() {
-                                                    let original_delivery_charge =
-                                                        (distancMileResult *
-                                                            {{ $per_km_shipping_charge }} >
-                                                            {{ $minimum_shipping_charge }}
-                                                        ) ?
-                                                        distancMileResult *
-                                                        {{ $per_km_shipping_charge }} :
-                                                        {{ $minimum_shipping_charge }};
-
-                                                    let delivery_charge =
-                                                        Math.round((
-                                                                ({{ $maximum_shipping_charge }} >
-                                                                    {{ $minimum_shipping_charge }} &&
-                                                                    original_delivery_charge >
-                                                                    {{ $maximum_shipping_charge }} ?
-                                                                    {{ $maximum_shipping_charge }} :
-                                                                    original_delivery_charge
-                                                                ) +
-                                                                Number
-                                                                .EPSILON) *
-                                                            100) / 100;
-                                                    document.getElementById(
-                                                            'delivery_fee')
-                                                        .value =
-                                                        delivery_charge;
-                                                    $('#delivery_fee')
-                                                        .siblings('strong')
-                                                        .html(
-                                                            delivery_charge +
-                                                            '{{ \App\CentralLogics\Helpers::currency_symbol() }}'
-                                                        );
+                                                    var delivery_charge = calcDeliveryFee(distancMileResult, 0);
+                                                    document.getElementById('delivery_fee').value = delivery_charge;
+                                                    jQuery('#delivery_fee').siblings('strong').html(delivery_charge + '{{ \App\CentralLogics\Helpers::currency_symbol() }}');
                                                 }
                                             });
 
@@ -660,7 +650,7 @@
                     data: function(params) {
                         return {
                             q: params.term, // search term
-                            module_id: {{ Config::get('module.current_module_id') }},
+                            module_id: {{ Config::get('module.current_module_id') ?? 0 }},
                             page: params.page
                         };
                     },
@@ -752,7 +742,7 @@
         }
 
         function checkStore() {
-            let module_id = {{ Config::get('module.current_module_id') }};
+            let module_id = {{ Config::get('module.current_module_id') ?? 0 }};
             let store_id = getUrlParameter('store_id');
             if (module_id && store_id) {
                 $('#category').prop("disabled", false);

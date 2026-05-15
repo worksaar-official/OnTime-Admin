@@ -691,11 +691,13 @@
     });
 
     const searchInput = document.getElementById('searchInput');
-    searchInput.addEventListener('search', function() {
-        if (!this.value.trim()) {
-            $('#searchResults').html('<div class="text-center text-muted py-5"></div>');
-        }
-    });
+    if (searchInput) {
+        searchInput.addEventListener('search', function() {
+            if (!this.value.trim()) {
+                $('#searchResults').html('<div class="text-center text-muted py-5"></div>');
+            }
+        });
+    }
 
     $('#searchForm').submit(function (event) {
         event.preventDefault();

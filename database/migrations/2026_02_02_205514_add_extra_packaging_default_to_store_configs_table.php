@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table(Schema::hasTable('store_configs')?  'store_configs' : 'storeConfigs', function (Blueprint $table) {
-            $table->boolean('extra_packaging_default')->default(false);
+        $table_name = Schema::hasTable('store_configs')?  'store_configs' : 'storeConfigs';
+        Schema::table($table_name, function (Blueprint $table) use ($table_name) {
+            if (!Schema::hasColumn($table_name, 'extra_packaging_default')) {
+                $table->boolean('extra_packaging_default')->default(false);
+            }
         });
     }
 
@@ -21,8 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table(Schema::hasTable('store_configs')?  'store_configs' : 'storeConfigs', function (Blueprint $table) {
-            $table->dropColumn('extra_packaging_default');
+        $table_name = Schema::hasTable('store_configs')?  'store_configs' : 'storeConfigs';
+        Schema::table($table_name, function (Blueprint $table) use ($table_name) {
+            if (Schema::hasColumn($table_name, 'extra_packaging_default')) {
+                $table->dropColumn('extra_packaging_default');
+            }
         });
     }
 };

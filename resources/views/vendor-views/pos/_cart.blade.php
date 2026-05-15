@@ -29,7 +29,7 @@
                 @foreach (session()->get('cart') as $key => $cartItem)
                     @if (is_array($cartItem))
                         <?php
-                        $variation_price +=  $cartItem['variation_price'] ?? 0;
+                        $variation_price += $cartItem['variation_price'] ?? 0;
                         $product_subtotal = $cartItem['price'] * $cartItem['quantity'];
                         $discount_on_product += $cartItem['discount'] * $cartItem['quantity'];
                         $subtotal += $product_subtotal;
@@ -37,12 +37,10 @@
                         ?>
                         <tr>
                             <td class="media align-items-center cursor-pointer quick-View-Cart-Item"
-                                data-product-id="{{$cartItem['id']}}" data-item-key="{{$key}}">
+                                data-product-id="{{ $cartItem['id'] }}" data-item-key="{{ $key }}">
                                 <img class="avatar avatar-sm mr-1 onerror-image"
-                                     data-onerror-image="{{ asset('public/assets/admin/img/100x100/2.png') }}"
-                                     src="{{ $cartItem['image_full_url'] }}"
-
-                                    alt="{{ $cartItem['name'] }} image">
+                                    data-onerror-image="{{ asset('public/assets/admin/img/100x100/2.png') }}"
+                                    src="{{ $cartItem['image_full_url'] }}" alt="{{ $cartItem['name'] }} image">
                                 <div class="media-body">
                                     <h5 class="text-hover-primary mb-0">{{ Str::limit($cartItem['name'], 10) }}</h5>
                                     <small>{{ Str::limit($cartItem['variant'], 20) }}</small>
@@ -50,8 +48,9 @@
                             </td>
                             <td class="text-center middle-align">
                                 <input type="number" data-key="{{ $key }}"
-                                    class="amount--input form-control text-center  update-Quantity" value="{{ $cartItem['quantity'] }}"
-                                    min="1" max="{{$cartItem['maximum_cart_quantity']?? '9999999999'}}" >
+                                    class="amount--input form-control text-center  update-Quantity"
+                                    value="{{ $cartItem['quantity'] }}" min="1"
+                                    max="{{ $cartItem['maximum_cart_quantity'] ?? '9999999999' }}">
                             </td>
                             <td class="text-center px-0 py-1">
                                 <div class="btn">
@@ -59,8 +58,9 @@
                                 </div>
                             </td>
                             <td class="align-items-center text-center ">
-                                <a href="javascript:"  data-product-id="{{$key}}"
-                                    class="btn btn-sm btn-outline-danger remove-From-Cart"> <i class="tio-delete-outlined"></i></a>
+                                <a href="javascript:" data-product-id="{{ $key }}"
+                                    class="btn btn-sm btn-outline-danger remove-From-Cart"> <i
+                                        class="tio-delete-outlined"></i></a>
                             </td>
                         </tr>
                     @endif
@@ -71,40 +71,40 @@
 </div>
 
 <?php
-    $add = false;
-    if (session()->has('address') && count(session()->get('address')) > 0) {
-        $add = true;
-        $delivery_fee = session()->get('address')['delivery_fee'];
-    } else {
-        $delivery_fee = 0;
-    }
+$add = false;
+if (session()->has('address') && count(session()->get('address')) > 0) {
+    $add = true;
+    $delivery_fee = session()->get('address')['delivery_fee'];
+} else {
+    $delivery_fee = 0;
+}
 
-    $total = $subtotal + $addon_price;
+$total = $subtotal + $addon_price;
 
-    if ($discount_type == 'percent' && $discount > 0) {
-        $discount_amount = (($total - $discount_on_product) * $discount) / 100;
-    } else {
-        $discount_amount = $discount;
-    }
+if ($discount_type == 'percent' && $discount > 0) {
+    $discount_amount = (($total - $discount_on_product) * $discount) / 100;
+} else {
+    $discount_amount = $discount;
+}
 
-    $total -= $discount_amount + $discount_on_product;
+$total -= $discount_amount + $discount_on_product;
 
-    $tax_amount = session()->get('tax_amount');
-    $tax_included = session()->get('tax_included');
+$tax_amount = session()->get('tax_amount');
+$tax_included = session()->get('tax_included');
 
-    if ($tax_included ==  1){
-        $tax_amount = 0;
-    }
+if ($tax_included == 1) {
+    $tax_amount = 0;
+}
 
-    $total += $delivery_fee;
+$total += $delivery_fee;
 
-    if (isset($cart['paid'])) {
-        $paid = $cart['paid'];
-        $change = $total + $tax_amount - $paid;
-    } else {
-        $paid = $total + $tax_amount;
-        $change = 0;
-    }
+if (isset($cart['paid'])) {
+    $paid = $cart['paid'];
+    $change = $total + $tax_amount - $paid;
+} else {
+    $paid = $total + $tax_amount;
+    $change = 0;
+}
 ?>
 <form action="{{ route('vendor.pos.order') }}" id='order_place' method="post">
     @csrf
@@ -116,11 +116,13 @@
             <dd class="col-6 text-right">{{ \App\CentralLogics\Helpers::format_currency($addon_price) }}</dd>
 
             <dt class="col-6 font-regular">{{ translate('messages.subtotal') }}
-                @if ($tax_included ==  1)
-                ({{ translate('messages.TAX_Included') }})
+                @if ($tax_included == 1)
+                    ({{ translate('messages.TAX_Included') }})
                 @endif
-                :</dt>
-            <dd class="col-6 text-right">{{ \App\CentralLogics\Helpers::format_currency($subtotal + $addon_price) }}</dd>
+                :
+            </dt>
+            <dd class="col-6 text-right">{{ \App\CentralLogics\Helpers::format_currency($subtotal + $addon_price) }}
+            </dd>
 
 
             <dt class="col-6 font-regular">{{ translate('messages.discount') }} :</dt>
@@ -134,12 +136,12 @@
             <dd class="col-6 text-right"><button class="btn btn-sm" type="button" data-toggle="modal"
                     data-target="#add-discount"><i class="tio-edit"></i></button>-
                 {{ \App\CentralLogics\Helpers::format_currency(round($discount_amount, 2)) }}</dd>
-            @if ($tax_included !=  1)
+            @if ($tax_included != 1)
                 <dt class="col-6 font-regular">{{ translate('messages.tax') }} : </dt>
                 <dd class="col-6 text-right">
-{{--                    <button class="btn btn-sm" type="button" data-toggle="modal"--}}
-{{--                    data-target="#add-tax">--}}
-{{--                        <i class="tio-edit"></i></button>--}}
+                    {{--                    <button class="btn btn-sm" type="button" data-toggle="modal" --}}
+                    {{--                    data-target="#add-tax"> --}}
+                    {{--                        <i class="tio-edit"></i></button> --}}
                     {{ \App\CentralLogics\Helpers::format_currency(round($tax_amount, 2)) }}
                 </dd>
             @endif
@@ -203,12 +205,13 @@
         @endif
         <div class="row button--bottom-fixed g-1 bg-white">
             <div class="col-sm-6">
-                <button type="submit" class="btn  btn--primary btn-sm btn-block place-order-submit">{{ translate('place_order') }}
+                <button type="submit"
+                    class="btn  btn--primary btn-sm btn-block place-order-submit">{{ translate('place_order') }}
                 </button>
             </div>
             <div class="col-sm-6">
-                <a href="#" class="btn btn--reset btn-sm btn-block empty-Cart"
-                    >{{ translate('Clear Cart') }}</a>
+                <a href="#"
+                    class="btn btn--reset btn-sm btn-block empty-Cart">{{ translate('Clear Cart') }}</a>
             </div>
         </div>
     </div>
@@ -229,13 +232,13 @@
                         <div class="form-group col-12">
                             <label class="input-label"
                                 for="paid">{{ translate('messages.amount') }}({{ \App\CentralLogics\Helpers::currency_symbol() }})</label>
-                            <input type="number" class="form-control"  id="paid" name="paid" min="0" step="0.01"
-                                value="{{ $paid }}">
+                            <input type="number" class="form-control" id="paid" name="paid" min="0"
+                                step="0.01" value="{{ $paid }}">
                         </div>
                     </div>
                     <div class="form-group col-12 mb-0">
                         <div class="btn--container justify-content-end">
-                            <button class="btn btn-sm btn--primary payable-amount" type="button" >
+                            <button class="btn btn-sm btn--primary payable-amount" type="button">
                                 {{ translate('messages.submit') }}
                             </button>
                         </div>
@@ -265,7 +268,7 @@
                     </div>
                     <div class="form-group col-sm-6">
                         <label for="discount_input_type">{{ translate('messages.type') }}</label>
-                        <select name="type" class="form-control" id="discount_input_type" >
+                        <select name="type" class="form-control" id="discount_input_type">
                             <option value="amount" {{ $discount_type == 'amount' ? 'selected' : '' }}>
                                 {{ translate('messages.amount') }}({{ \App\CentralLogics\Helpers::currency_symbol() }})
                             </option>
@@ -336,15 +339,16 @@
                             <label class="input-label"
                                 for="contact_person_name">{{ translate('messages.contact_person_name') }}<span
                                     class="input-label-secondary text-danger">*</span></label>
-                            <input type="text" id="contact_person_name" class="form-control" name="contact_person_name"
-                                value="{{ $old ? $old['contact_person_name'] : '' }}"
+                            <input type="text" id="contact_person_name" class="form-control"
+                                name="contact_person_name" value="{{ $old ? $old['contact_person_name'] : '' }}"
                                 placeholder="{{ translate('Ex: Jhone') }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="input-label" for="contact_person_number">{{ translate('Contact Number') }}<span
+                            <label class="input-label"
+                                for="contact_person_number">{{ translate('Contact Number') }}<span
                                     class="input-label-secondary text-danger">*</span></label>
-                            <input type="tel" id="contact_person_number" class="form-control" name="contact_person_number"
-                                value="{{ $old ? $old['contact_person_number'] : '' }}"
+                            <input type="tel" id="contact_person_number" class="form-control"
+                                name="contact_person_number" value="{{ $old ? $old['contact_person_number'] : '' }}"
                                 placeholder="{{ translate('Ex: +3264124565') }}">
                         </div>
                         <div class="col-md-4">
@@ -404,8 +408,7 @@
                     </div>
                     <div class="col-md-12">
                         <div class="btn--container justify-content-end">
-                            <button class="btn btn-sm btn--primary w-100 delivery-Address-Store" type="button"
-                                >
+                            <button class="btn btn-sm btn--primary w-100 delivery-Address-Store" type="button">
                                 {{ translate('Update_Delivery address') }}
                             </button>
                         </div>
@@ -416,4 +419,4 @@
     </div>
 </div>
 
-<script src="{{asset('public/assets/admin')}}/js/view-pages/common.js"></script>
+<script src="{{ asset('public/assets/admin') }}/js/view-pages/common.js"></script>
