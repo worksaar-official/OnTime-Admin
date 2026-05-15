@@ -29,11 +29,11 @@ jobs:
           ssh ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
             cd /home/ontime-dev-cpanel/htdocs/dev.cpanel.ontime.city
 
-            # Fix only composer.lock conflict (keep other files safe)
-            git restore composer.lock || git checkout -- composer.lock
-
-            # Pull latest changes
-            git pull origin main
+            # Fetch latest changes
+            git fetch origin main
+            
+            # Reset to origin/main to avoid conflicts
+            git reset --hard origin/main
 
             # migrate changes in db
             php artisan migrate --force
