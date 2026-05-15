@@ -496,21 +496,37 @@
                                                             temp_charge += (distance_in_tier * t_rate);
                                                         }
                                                     });
-                                                    original_delivery_charge = Math.max(temp_charge, js_min_shipping);
+                                                    
+                                                    var base_calc = Math.max(temp_charge, js_min_shipping);
+                                                    if (temp_charge === 0 && distancMileResult > 0) {
+                                                        original_delivery_charge = 0;
+                                                    } else {
+                                                        original_delivery_charge = base_calc + (Number(extra_charge) || 0);
+                                                    }
                                                 } else {
                                                     // RANGE-BASED (Total Distance * Matching Tier Rate)
                                                     var matching_tier_rate = 0;
+                                                    var matched_temp_charge = 0;
                                                     js_tiers.forEach(function(tier) {
                                                         var t_start = parseFloat(tier.start) || 0;
                                                         if (distancMileResult > t_start) {
                                                             matching_tier_rate = parseFloat(tier.charge) || 0;
                                                         }
                                                     });
-                                                    original_delivery_charge = Math.max((distancMileResult * matching_tier_rate), js_min_shipping);
+                                                    matched_temp_charge = matching_tier_rate; // Indicator
+                                                    
+                                                    var base_calc = Math.max((distancMileResult * matching_tier_rate), js_min_shipping);
+                                                    if (matched_temp_charge === 0 && distancMileResult > 0) {
+                                                        original_delivery_charge = 0;
+                                                    } else {
+                                                        original_delivery_charge = base_calc + (Number(extra_charge) || 0);
+                                                    }
                                                 }
+                                            } else {
+                                                original_delivery_charge = original_delivery_charge + (Number(extra_charge) || 0);
                                             }
 
-                                            var delivery_amount = original_delivery_charge + (Number(extra_charge) || 0);
+                                            var delivery_amount = original_delivery_charge;
                                             if (js_max_shipping > js_min_shipping && delivery_amount > js_max_shipping) {
                                                 delivery_amount = js_max_shipping;
                                             }

@@ -149,6 +149,7 @@ trait PlaceNewOrder
             $delivery_charge = data_get($deliveryChargeData, 'delivery_charge', 0);
             $original_delivery_charge = data_get($deliveryChargeData, 'original_delivery_charge', 0);
             $vehicle_id = data_get($deliveryChargeData, 'vehicle_id', null);
+            $free_delivery_by = data_get($deliveryChargeData, 'free_delivery_by', null);
 
             $address = [
                 'contact_person_name' => $request->contact_person_name ? $request->contact_person_name : ($request->user ? $request->user->f_name.' '.$request->user->l_name : ''),
@@ -207,6 +208,7 @@ trait PlaceNewOrder
             $order->cutlery = $request->cutlery ? 1 : 0;
             $order->is_guest = $request->user ? 0 : 1;
             $order->otp = rand(1000, 9999);
+            $order->free_delivery_by = $free_delivery_by;
             $order->zone_id = isset($zone) ? $zone->id : end(json_decode($request->header('zoneId'), true));
             $order->module_id = getModuleId($request->header('moduleId'));
             $order->parcel_category_id = $request->parcel_category_id;
@@ -930,11 +932,26 @@ trait PlaceNewOrder
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
 
                     $delivery_charge = max($temp_charge, $minimum_shipping_charge);
+                    $original_delivery_charge = $delivery_charge + $extra_charges;
+                    
+                    $free_delivery_by = null;
+                    if ($temp_charge == 0 && $distance > 0) {
+                        $delivery_charge = 0;
+                        $free_delivery_by = 'admin';
+                    } else {
+                        $delivery_charge = $original_delivery_charge;
+                    }
+
                     if ($maximum_shipping_charge > 0 && $delivery_charge > $maximum_shipping_charge) {
                         $delivery_charge = $maximum_shipping_charge;
                     }
-                    $original_delivery_charge = $delivery_charge;
 
+                    return [
+                        'vehicle_id' => $vehicleExtraCharge['vehicle_id'],
+                        'original_delivery_charge' => $original_delivery_charge,
+                        'delivery_charge' => $delivery_charge,
+                        'free_delivery_by' => $free_delivery_by,
+                    ];
                 } else {
                     $per_km_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->per_km_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
                     $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
