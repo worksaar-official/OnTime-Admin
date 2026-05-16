@@ -872,6 +872,7 @@ trait PlaceNewOrder
 
     private function getDeliveryCharge($request, $zone, $store, $module_wise_delivery_charge, $delivery_charge, $moduleId)
     {
+        $original_delivery_charge = 0;
         $increased = 0;
         $schedule_at = $request->schedule_at ? Carbon::parse($request->schedule_at) : now();
         $surge = $this->getSurgePriceValue($zone->id, $moduleId, $schedule_at);
@@ -1725,6 +1726,17 @@ trait PlaceNewOrder
                 'tax_status' => $finalCalculatedTax['tax_status'],
                 'tax_included' => $finalCalculatedTax['tax_included'],
             ];
+
+            $zone = Zone::whereContains('coordinates', new Point($request->latitude, $request->longitude))->first() ?: Zone::find($store->zone_id);
+
+            if ($zone && $store) {
+                $module_wise_delivery_charge = $zone->modules()->where('modules.id', $store->module_id ?? getModuleId($request->header('moduleId')))->first();
+                $deliveryChargeData = $this->getDeliveryCharge($request, $zone, $store, $module_wise_delivery_charge, null, $store->module_id ?? getModuleId($request->header('moduleId')));
+                $data['delivery_charge'] = data_get($deliveryChargeData, 'delivery_charge', 0);
+                $data['original_delivery_charge'] = data_get($deliveryChargeData, 'original_delivery_charge', 0);
+                $data['delivery_charge_type'] = (isset($module_wise_delivery_charge) && $module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') ? 'tier' : 'default';
+                $data['distance'] = (float) $request->distance ?? 0;
+            }
         }
 
         if ($request->order_type == 'parcel' || $request->is_prescription == true) {
@@ -1757,6 +1769,13 @@ trait PlaceNewOrder
                 'tax_included' => $finalCalculatedTax['include'],
                 'tax_status' => $finalCalculatedTax['include'] ? 'included' : 'excluded',
             ];
+        }
+
+        if (! isset($data['delivery_charge'])) {
+            $data['delivery_charge'] = 0;
+            $data['original_delivery_charge'] = 0;
+            $data['delivery_charge_type'] = 'default';
+            $data['distance'] = (float) ($request->distance ?? 0);
         }
 
         return response()->json($data, 200);
