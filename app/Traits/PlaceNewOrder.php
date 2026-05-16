@@ -908,9 +908,9 @@ trait PlaceNewOrder
                         // TIER-WISE (Incremental Accumulation)
                         $temp_charge = 0;
                         foreach ($tiers as $tier) {
-                            $t_start = (float)($tier['start'] ?? 0);
-                            $t_end = (float)($tier['end'] ?? PHP_INT_MAX);
-                            $t_rate = (float)($tier['charge'] ?? 0);
+                            $t_start = (float) ($tier['start'] ?? 0);
+                            $t_end = (float) ($tier['end'] ?? PHP_INT_MAX);
+                            $t_rate = (float) ($tier['charge'] ?? 0);
                             if ($distance > $t_start) {
                                 $distance_in_tier = min($distance, $t_end) - $t_start;
                                 $temp_charge += ($distance_in_tier * $t_rate);
@@ -920,9 +920,9 @@ trait PlaceNewOrder
                         // RANGE-BASED (Total Distance * Matching Tier Rate)
                         $matching_tier_rate = 0;
                         foreach ($tiers as $tier) {
-                            $t_start = (float)($tier['start'] ?? 0);
+                            $t_start = (float) ($tier['start'] ?? 0);
                             if ($distance > $t_start) {
-                                $matching_tier_rate = (float)($tier['charge'] ?? 0);
+                                $matching_tier_rate = (float) ($tier['charge'] ?? 0);
                             }
                         }
                         $temp_charge = $distance * $matching_tier_rate;
@@ -933,7 +933,7 @@ trait PlaceNewOrder
 
                     $delivery_charge = max($temp_charge, $minimum_shipping_charge);
                     $original_delivery_charge = $delivery_charge + $extra_charges;
-                    
+
                     $free_delivery_by = null;
                     if ($temp_charge == 0 && $distance > 0) {
                         $delivery_charge = 0;
@@ -1758,6 +1758,29 @@ trait PlaceNewOrder
                 'tax_status' => $finalCalculatedTax['include'] ? 'included' : 'excluded',
             ];
         }
+        $delivery_charge = 0;
+        $original_delivery_charge = 0;
+        $delivery_charge_type = 'default';
+
+        if ($request->order_type !== 'take_away' && $request->order_type !== 'parcel' && $request->is_prescription == false) {
+            $schedule_at = $request->schedule_at ? Carbon::parse($request->schedule_at) : now();
+            $zoneAndStore = $this->getZoneAndStore($request, $schedule_at);
+            $store = $zoneAndStore['store'] ?? (isset($store) ? $store : null);
+            $zone = $zoneAndStore['zone'] ?? (isset($store) ? Zone::find($store->zone_id) : null);
+
+            if ($zone && $store) {
+                $module_wise_delivery_charge = $zone->modules()->where('modules.id', $store->module_id ?? getModuleId($request->header('moduleId')))->first();
+                $deliveryChargeData = $this->getDeliveryCharge($request, $zone, $store, $module_wise_delivery_charge, 0, $store->module_id ?? getModuleId($request->header('moduleId')));
+                $delivery_charge = data_get($deliveryChargeData, 'delivery_charge', 0);
+                $original_delivery_charge = data_get($deliveryChargeData, 'original_delivery_charge', 0);
+                $delivery_charge_type = (isset($module_wise_delivery_charge) && $module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') ? 'tier' : 'default';
+            }
+        }
+
+        $data['delivery_charge'] = $delivery_charge;
+        $data['original_delivery_charge'] = $original_delivery_charge;
+        $data['delivery_charge_type'] = $delivery_charge_type;
+        $data['distance'] = $request->distance ?? 0;
 
         return response()->json($data, 200);
     }
