@@ -937,6 +937,7 @@ trait PlaceNewOrder
 
                     $free_delivery_by = null;
                     if ($temp_charge == 0 && $distance > 0) {
+
                         $delivery_charge = 0;
                         $free_delivery_by = 'admin';
                     } else {
