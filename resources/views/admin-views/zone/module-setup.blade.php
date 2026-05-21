@@ -276,7 +276,7 @@
                                                     value="{{ $pivot?->fixed_shipping_charge }}">
                                             </div>
                                         </div>
-                                        <div class="col-md-6 col-lg-4 distance-charge-field">
+                                        <div class="col-md-6 col-lg-4 distance-charge-field tier-charge-field">
                                             <div class="form-group mb-0">
                                                 <label
                                                     class="input-label text-capitalize fs-14 d-flex alig-items-center line--limit-1">
@@ -304,7 +304,7 @@
                                                     value="{{ $pivot?->maximum_shipping_charge }}">
                                             </div>
                                         </div>
-                                        <div class="col-md-6 col-lg-4 distance-charge-field tier-charge-field">
+                                        <div class="col-md-6 col-lg-4 distance-charge-field">
                                             <div class="form-group mb-0">
                                                 <label
                                                     class="input-label text-capitalize fs-14 d-flex alig-items-center line--limit-1">

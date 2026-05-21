@@ -202,23 +202,32 @@ class ZoneController extends BaseController
             if (!in_array($module?->module_type, ['parcel', 'rental'])) {
                 switch ($data['flag']) {
                     case 'fixed_required':
-                        Toastr::error(translate("Fixed delivery charge is required for module:") . '' . $moduleName);
+                        Toastr::error(translate("Fixed delivery charge is required for module:") . ' ' . $moduleName);
                         break;
 
                     case 'distance_required':
-                        Toastr::error(translate("Per km and minimum delivery charge are required for module:") . '' . $moduleName);
+                        Toastr::error(translate("Per km and minimum delivery charge are required for module:") . ' ' . $moduleName);
+                        break;
+
+                    case 'tier_distance_required':
+                        Toastr::error(translate("Per km delivery charge is required for module:") . ' ' . $moduleName);
+                        break;
+
+                    case 'tier_required':
+                        Toastr::error(translate("Distance-wise tiers are required for module:") . ' ' . $moduleName);
                         break;
 
                     case 'max_lt_min':
-                        Toastr::error(translate("Maximum delivery charge must be greater than or equal to minimum for module:") . '' . $moduleName);
+                    case 'max_delivery_charge':
+                        Toastr::error(translate("Maximum delivery charge must be greater than or equal to minimum for module:") . ' ' . $moduleName);
                         break;
 
                     case 'unknown_type':
-                        Toastr::error(translate("Unknown delivery charge type selected for module:") . '' . $moduleName);
+                        Toastr::error(translate("Unknown delivery charge type selected for module:") . ' ' . $moduleName);
                         break;
 
                     default:
-                        Toastr::error(translate("Invalid delivery charge configuration for module:") . '' . $moduleName);
+                        Toastr::error(translate("Invalid delivery charge configuration for module:") . ' ' . $moduleName);
                         break;
                 }
 

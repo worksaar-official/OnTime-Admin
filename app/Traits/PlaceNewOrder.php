@@ -929,10 +929,10 @@ trait PlaceNewOrder
                         $temp_charge = $distance * $matching_tier_rate;
                     }
 
-                    $minimum_shipping_charge = $module_wise_delivery_charge->pivot->minimum_shipping_charge ?? 0;
+                    $per_km_shipping_charge = $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0;
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
 
-                    $delivery_charge = max($temp_charge, $minimum_shipping_charge);
+                    $delivery_charge = max($temp_charge, $distance * $per_km_shipping_charge);
                     $original_delivery_charge = $delivery_charge + $extra_charges;
 
                     $free_delivery_by = null;
