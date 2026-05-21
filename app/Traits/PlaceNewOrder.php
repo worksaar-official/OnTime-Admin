@@ -1606,180 +1606,200 @@ trait PlaceNewOrder
 
     public function getCalculatedTax($request)
     {
-        if (gettype($request->is_prescription) == 'string') {
-            if ($request->is_prescription == 'true') {
-                $request->is_prescription = true;
-            } else {
-                $request->is_prescription = false;
+        try {
+            if (gettype($request->is_prescription) == 'string') {
+                if ($request->is_prescription == 'true') {
+                    $request->is_prescription = true;
+                } else {
+                    $request->is_prescription = false;
+                }
             }
-        }
-        $product_price = $request->order_amount ?? 0;
-        $coupon = null;
-        $ref_bonus_amount = 0;
-        $total_addon_price = 0;
-        $store_discount_amount = 0;
-        $flash_sale_admin_discount_amount = 0;
-        $flash_sale_vendor_discount_amount = 0;
-        $coupon_discount_amount = 0;
-        $order_details = [];
+            $product_price = $request->order_amount ?? 0;
+            $coupon = null;
+            $ref_bonus_amount = 0;
+            $total_addon_price = 0;
+            $store_discount_amount = 0;
+            $flash_sale_admin_discount_amount = 0;
+            $flash_sale_vendor_discount_amount = 0;
+            $coupon_discount_amount = 0;
+            $order_details = [];
 
-        $order = new Order;
-        $order->user_id = $request->user ? $request->user->id : $request['guest_id'];
-        $order->is_guest = $request->user ? 0 : 1;
-        $order->store_id = $request['store_id'];
+            $order = new Order;
+            $order->user_id = $request->user ? $request->user->id : $request['guest_id'];
+            $order->is_guest = $request->user ? 0 : 1;
+            $order->store_id = $request['store_id'];
 
-        $additionalCharges = [];
-        $settings = BusinessSetting::whereIn('key', [
-            'additional_charge_status',
-            'additional_charge',
-            'extra_packaging_data',
-        ])->pluck('value', 'key');
+            $additionalCharges = [];
+            $settings = BusinessSetting::whereIn('key', [
+                'additional_charge_status',
+                'additional_charge',
+                'extra_packaging_data',
+            ])->pluck('value', 'key');
 
-        $additional_charge_status = $settings['additional_charge_status'] ?? null;
-        $additional_charge = $settings['additional_charge'] ?? null;
+            $additional_charge_status = $settings['additional_charge_status'] ?? null;
+            $additional_charge = $settings['additional_charge'] ?? null;
 
-        $extra_packaging_data_raw = $settings['extra_packaging_data'] ?? '';
-        $extra_packaging_data = json_decode($extra_packaging_data_raw, true) ?? [];
+            $extra_packaging_data_raw = $settings['extra_packaging_data'] ?? '';
+            $extra_packaging_data = json_decode($extra_packaging_data_raw, true) ?? [];
 
-        if ($additional_charge_status == 1) {
-            // $additionalCharges['tax_on_additional_charge'] = $additional_charge ?? 0;
-        }
-
-        if ($request->order_type !== 'parcel') {
-
-            $store = Store::with(['discount', 'store_sub'])->where('id', $request->store_id)->first();
-
-            $couponData = $this->getCouponData($request);
-            if (data_get($couponData, 'status_code') === 403) {
-
-                return response()->json([
-                    'errors' => [
-                        ['code' => data_get($couponData, 'code'), 'message' => data_get($couponData, 'message')],
-                    ],
-                ], data_get($couponData, 'status_code'));
-            } else {
-                $coupon = data_get($couponData, 'coupon');
+            if ($additional_charge_status == 1) {
+                // $additionalCharges['tax_on_additional_charge'] = $additional_charge ?? 0;
             }
 
-            if (! $request->is_prescription) {
+            if ($request->order_type !== 'parcel') {
 
-                $extra_packaging_amount = (! empty($extra_packaging_data) && $request?->extra_packaging_amount > 0 && $store && ($extra_packaging_data[$store->module->module_type] == '1') && ($store?->storeConfig?->extra_packaging_status == '1')) ? $store?->storeConfig?->extra_packaging_amount : 0;
-
-                if ($extra_packaging_amount > 0) {
-                    $additionalCharges['tax_on_packaging_charge'] = $extra_packaging_amount;
+                $store = Store::with(['discount', 'store_sub'])->where('id', $request->store_id)->first();
+                if (!$store) {
+                    return response()->json([
+                        'errors' => [
+                            ['code' => 'store', 'message' => translate('messages.store_not_found')],
+                        ],
+                    ], 404);
                 }
 
-                $carts = Cart::where('user_id', $order->user_id)->where('is_guest', $order->is_guest)->where('module_id', getModuleId($request->header('moduleId')))
-                    ->when(isset($request->is_buy_now) && $request->is_buy_now == 1 && $request->cart_id, function ($query) use ($request) {
-                        return $query->where('id', $request->cart_id);
-                    })
-                    ->get()->map(function ($data) {
-                        $data->add_on_ids = json_decode($data->add_on_ids, true);
-                        $data->add_on_qtys = json_decode($data->add_on_qtys, true);
-                        $data->variation = json_decode($data->variation, true);
-
-                        return $data;
-                    });
-
-                if (isset($request->is_buy_now) && $request->is_buy_now == 1) {
-                    $carts = json_decode($request['cart'], true);
-                }
-
-                $order_details = $this->makeOrderDetails($carts, $request, $order, $store);
-                if (data_get($order_details, 'status_code') === 403) {
+                $couponData = $this->getCouponData($request);
+                if (data_get($couponData, 'status_code') === 403) {
 
                     return response()->json([
                         'errors' => [
-                            ['code' => data_get($order_details, 'code'), 'message' => data_get($order_details, 'message')],
+                            ['code' => data_get($couponData, 'code'), 'message' => data_get($couponData, 'message')],
                         ],
-                    ], data_get($order_details, 'status_code'));
+                    ], data_get($couponData, 'status_code'));
+                } else {
+                    $coupon = data_get($couponData, 'coupon');
                 }
 
-                $total_addon_price = $order_details['total_addon_price'];
-                $product_price = $order_details['product_price'];
-                $store_discount_amount = $order_details['store_discount_amount'];
-                $flash_sale_admin_discount_amount = $order_details['flash_sale_admin_discount_amount'];
-                $flash_sale_vendor_discount_amount = $order_details['flash_sale_vendor_discount_amount'];
-                $order_details = $order_details['order_details'];
+                if (! $request->is_prescription) {
+
+                    $extra_packaging_amount = (! empty($extra_packaging_data) && $request?->extra_packaging_amount > 0 && $store && ($extra_packaging_data[$store->module->module_type] == '1') && ($store?->storeConfig?->extra_packaging_status == '1')) ? $store?->storeConfig?->extra_packaging_amount : 0;
+
+                    if ($extra_packaging_amount > 0) {
+                        $additionalCharges['tax_on_packaging_charge'] = $extra_packaging_amount;
+                    }
+
+                    $carts = Cart::where('user_id', $order->user_id)->where('is_guest', $order->is_guest)->where('module_id', getModuleId($request->header('moduleId')))
+                        ->when(isset($request->is_buy_now) && $request->is_buy_now == 1 && $request->cart_id, function ($query) use ($request) {
+                            return $query->where('id', $request->cart_id);
+                        })
+                        ->get()->map(function ($data) {
+                            $data->add_on_ids = json_decode($data->add_on_ids, true);
+                            $data->add_on_qtys = json_decode($data->add_on_qtys, true);
+                            $data->variation = json_decode($data->variation, true);
+
+                            return $data;
+                        });
+
+                    if (isset($request->is_buy_now) && $request->is_buy_now == 1) {
+                        $carts = json_decode($request['cart'], true);
+                    }
+
+                    $order_details = $this->makeOrderDetails($carts, $request, $order, $store);
+                    if (data_get($order_details, 'status_code') === 403) {
+
+                        return response()->json([
+                            'errors' => [
+                                ['code' => data_get($order_details, 'code'), 'message' => data_get($order_details, 'message')],
+                            ],
+                        ], data_get($order_details, 'status_code'));
+                    }
+
+                    $total_addon_price = $order_details['total_addon_price'] ?? 0;
+                    $product_price = $order_details['product_price'] ?? 0;
+                    $store_discount_amount = $order_details['store_discount_amount'] ?? 0;
+                    $flash_sale_admin_discount_amount = $order_details['flash_sale_admin_discount_amount'] ?? 0;
+                    $flash_sale_vendor_discount_amount = $order_details['flash_sale_vendor_discount_amount'] ?? 0;
+                    $order_details = $order_details['order_details'] ?? [];
+                }
+
+                $coupon_discount_amount = $coupon ? CouponLogic::get_discount($coupon, $product_price + $total_addon_price - $store_discount_amount - $flash_sale_admin_discount_amount - $flash_sale_vendor_discount_amount) : 0;
             }
 
-            $coupon_discount_amount = $coupon ? CouponLogic::get_discount($coupon, $product_price + $total_addon_price - $store_discount_amount - $flash_sale_admin_discount_amount - $flash_sale_vendor_discount_amount) : 0;
-        }
+            $total_price = $product_price + $total_addon_price - $store_discount_amount - $flash_sale_admin_discount_amount - $flash_sale_vendor_discount_amount - $coupon_discount_amount;
 
-        $total_price = $product_price + $total_addon_price - $store_discount_amount - $flash_sale_admin_discount_amount - $flash_sale_vendor_discount_amount - $coupon_discount_amount;
-
-        if ($order->is_guest == 0 && $order->user_id) {
-            $user = User::withcount('orders')->find($order->user_id);
-            $discount_data = Helpers::getCusromerFirstOrderDiscount(order_count: $user->orders_count, user_creation_date: $user->created_at, refby: $user->ref_by, price: $total_price);
-            if (data_get($discount_data, 'is_valid') == true && data_get($discount_data, 'calculated_amount') > 0) {
-                $total_price = $total_price - data_get($discount_data, 'calculated_amount');
-                $ref_bonus_amount = data_get($discount_data, 'calculated_amount');
+            if ($order->is_guest == 0 && $order->user_id) {
+                $user = User::withcount('orders')->find($order->user_id);
+                if ($user) {
+                    $discount_data = Helpers::getCusromerFirstOrderDiscount(order_count: $user->orders_count, user_creation_date: $user->created_at, refby: $user->ref_by, price: $total_price);
+                    if (data_get($discount_data, 'is_valid') == true && data_get($discount_data, 'calculated_amount') > 0) {
+                        $total_price = $total_price - data_get($discount_data, 'calculated_amount');
+                        $ref_bonus_amount = data_get($discount_data, 'calculated_amount');
+                    }
+                }
             }
-        }
 
-        $totalDiscount = $store_discount_amount + $flash_sale_admin_discount_amount + $flash_sale_vendor_discount_amount + $coupon_discount_amount + $ref_bonus_amount;
+            $totalDiscount = $store_discount_amount + $flash_sale_admin_discount_amount + $flash_sale_vendor_discount_amount + $coupon_discount_amount + $ref_bonus_amount;
 
-        if ($request->order_type != 'parcel' && $request->is_prescription == false) {
+            if ($request->order_type != 'parcel' && $request->is_prescription == false) {
 
-            $finalCalculatedTax = Helpers::getFinalCalculatedTax($order_details, $additionalCharges, $totalDiscount, $total_price, $order->store_id, false);
-            $data = [
-                'tax_amount' => $finalCalculatedTax['tax_amount'],
-                'tax_status' => $finalCalculatedTax['tax_status'],
-                'tax_included' => $finalCalculatedTax['tax_included'],
-            ];
+                $finalCalculatedTax = Helpers::getFinalCalculatedTax($order_details, $additionalCharges, $totalDiscount, $total_price, $order->store_id, false);
+                $data = [
+                    'tax_amount' => $finalCalculatedTax['tax_amount'],
+                    'tax_status' => $finalCalculatedTax['tax_status'],
+                    'tax_included' => $finalCalculatedTax['tax_included'],
+                ];
 
-            $zone = Zone::whereContains('coordinates', new Point($request->latitude, $request->longitude))->first() ?: Zone::find($store->zone_id);
+                $zone = null;
+                if ($request->latitude && $request->longitude && $request->latitude != 'null' && $request->longitude != 'null') {
+                    $zone = Zone::whereContains('coordinates', new Point($request->latitude, $request->longitude, POINT_SRID))->first();
+                }
+                if (!$zone && isset($store)) {
+                    $zone = Zone::find($store->zone_id);
+                }
 
-            if ($zone && $store) {
-                $module_wise_delivery_charge = $zone->modules()->where('modules.id', $store->module_id ?? getModuleId($request->header('moduleId')))->first();
-                $deliveryChargeData = $this->getDeliveryCharge($request, $zone, $store, $module_wise_delivery_charge, null, $store->module_id ?? getModuleId($request->header('moduleId')));
-                $data['delivery_charge'] = data_get($deliveryChargeData, 'delivery_charge', 0);
-                $data['original_delivery_charge'] = data_get($deliveryChargeData, 'original_delivery_charge', 0);
-                $data['delivery_charge_type'] = (isset($module_wise_delivery_charge) && $module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') ? 'tier' : 'default';
-                $data['distance'] = (float) $request->distance ?? 0;
+                if ($zone && isset($store)) {
+                    $module_wise_delivery_charge = $zone->modules()->where('modules.id', $store->module_id ?? getModuleId($request->header('moduleId')))->first();
+                    $deliveryChargeData = $this->getDeliveryCharge($request, $zone, $store, $module_wise_delivery_charge, null, $store->module_id ?? getModuleId($request->header('moduleId')));
+                    $data['delivery_charge'] = data_get($deliveryChargeData, 'delivery_charge', 0);
+                    $data['original_delivery_charge'] = data_get($deliveryChargeData, 'original_delivery_charge', 0);
+                    $data['delivery_charge_type'] = (isset($module_wise_delivery_charge) && $module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') ? 'tier' : 'default';
+                    $data['distance'] = (float) ($request->distance ?? 0);
+                }
             }
-        }
 
-        if ($request->order_type == 'parcel' || $request->is_prescription == true) {
+            if ($request->order_type == 'parcel' || $request->is_prescription == true) {
 
-            if ($request->order_type == 'parcel') {
-                $productIds[] = [
-                    'id' => 1,
-                    'original_price' => $product_price,
-                    'quantity' => 1,
-                    'category_id' => $request->parcel_category_id,
-                    'discount' => 0,
-                    'discount_type' => '',
-                    'after_discount_final_price' => $product_price,
-                    'is_campaign_item' => false,
+                if ($request->order_type == 'parcel') {
+                    $productIds[] = [
+                        'id' => 1,
+                        'original_price' => $product_price,
+                        'quantity' => 1,
+                        'category_id' => $request->parcel_category_id,
+                        'discount' => 0,
+                        'discount_type' => '',
+                        'after_discount_final_price' => $product_price,
+                        'is_campaign_item' => false,
+                    ];
+                }
+
+                $finalCalculatedTax = CalculateTaxService::getCalculatedTax(
+                    amount: $product_price,
+                    productIds: $productIds ?? [],
+                    taxPayer: $request->is_prescription == true ? 'prescription' : 'parcel',
+                    storeData: true,
+                    additionalCharges: $additionalCharges,
+                    addonIds: [],
+                    orderId: null,
+                    storeId: null
+                );
+                $data = [
+                    'tax_amount' => $finalCalculatedTax['totalTaxamount'],
+                    'tax_included' => $finalCalculatedTax['include'],
+                    'tax_status' => $finalCalculatedTax['include'] ? 'included' : 'excluded',
                 ];
             }
 
-            $finalCalculatedTax = CalculateTaxService::getCalculatedTax(
-                amount: $product_price,
-                productIds: $productIds ?? [],
-                taxPayer: $request->is_prescription == true ? 'prescription' : 'parcel',
-                storeData: true,
-                additionalCharges: $additionalCharges,
-                addonIds: [],
-                orderId: null,
-                storeId: null
-            );
-            $data = [
-                'tax_amount' => $finalCalculatedTax['totalTaxamount'],
-                'tax_included' => $finalCalculatedTax['include'],
-                'tax_status' => $finalCalculatedTax['include'] ? 'included' : 'excluded',
-            ];
-        }
+            if (! isset($data['delivery_charge'])) {
+                $data['delivery_charge'] = 0;
+                $data['original_delivery_charge'] = 0;
+                $data['delivery_charge_type'] = 'default';
+                $data['distance'] = (float) ($request->distance ?? 0);
+            }
 
-        if (! isset($data['delivery_charge'])) {
-            $data['delivery_charge'] = 0;
-            $data['original_delivery_charge'] = 0;
-            $data['delivery_charge_type'] = 'default';
-            $data['distance'] = (float) ($request->distance ?? 0);
+            return response()->json($data, 200);
+        } catch (\Exception $e) {
+            info(['Error in getCalculatedTax: ', $e->getMessage(), $e->getFile(), $e->getLine()]);
+            return response()->json(['message' => $e->getMessage()], 500);
         }
-
-        return response()->json($data, 200);
     }
 
     public function setPosCalculatedTax($store, $storeData = false)
