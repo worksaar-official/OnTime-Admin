@@ -902,6 +902,7 @@ trait PlaceNewOrder
                 $increased = 0;
             } elseif ($module_wise_delivery_charge) {
                 if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') {
+                    $extra_charges = 0;
                     $distance = $request->distance ?? 0;
                     $tiers = $module_wise_delivery_charge->pivot->tiered_delivery_charge ?? [];
                     $tier_wise = $module_wise_delivery_charge->pivot->tier_wise_delivery_charge ?? 0;
@@ -949,7 +950,7 @@ trait PlaceNewOrder
                     }
 
                     return [
-                        'vehicle_id' => $vehicleExtraCharge['vehicle_id'],
+                        'vehicle_id' => null,
                         'original_delivery_charge' => $original_delivery_charge,
                         'delivery_charge' => $delivery_charge,
                         'free_delivery_by' => $free_delivery_by,
