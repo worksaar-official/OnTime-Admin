@@ -622,6 +622,9 @@
                                                             original_delivery_charge = base_calc + (Number(extra_charge) || 0);
                                                         }
                                                     }
+                                                } else {
+                                                    // No extra charge for distance wise
+                                                    original_delivery_charge = original_delivery_charge;
                                                 }
 
                                                 var delivery_amount = original_delivery_charge;
@@ -639,7 +642,7 @@
                                                     self_delivery_status: {{ $self_delivery_status ?? 0 }},
                                                 },
                                                 success: function(data) {
-                                                    var delivery_charge = calcDeliveryFee(distancMileResult, data);
+                                                    var delivery_charge = calcDeliveryFee(distancMileResult, (js_delivery_type === 'tier' ? data : 0));
                                                     document.getElementById('delivery_fee').value = delivery_charge;
                                                     jQuery('#delivery_fee').siblings('strong').html(delivery_charge + '{{ \App\CentralLogics\Helpers::currency_symbol() }}');
                                                 },

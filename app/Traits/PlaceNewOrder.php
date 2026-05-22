@@ -978,8 +978,8 @@ trait PlaceNewOrder
                 $delivery_charge = $original_delivery_charge;
             }
 
-            $original_delivery_charge = $original_delivery_charge + $extra_charges;
-            $delivery_charge = $delivery_charge + $extra_charges;
+            $original_delivery_charge = $original_delivery_charge;
+            $delivery_charge = $delivery_charge;
         } else {
             $parcel_category = ParcelCategory::find($request->parcel_category_id);
             if ($parcel_category?->parcel_minimum_shipping_charge) {
@@ -995,7 +995,7 @@ trait PlaceNewOrder
                 $minimum_shipping_charge = (float) ($businessSetting['parcel_minimum_shipping_charge'] ?? 0);
             }
 
-            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? ($request->distance * $per_km_shipping_charge) + $extra_charges : ($minimum_shipping_charge + $extra_charges);
+            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? ($request->distance * $per_km_shipping_charge) : ($minimum_shipping_charge);
         }
 
         if ($increased > 0) {
