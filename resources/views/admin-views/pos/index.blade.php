@@ -596,17 +596,6 @@
                                                                 temp_charge += (distance_in_tier * t_rate);
                                                             }
                                                         });
-                                                        // TIER-WISE (Incremental Accumulation)
-                                                        var temp_charge = 0;
-                                                        js_tiers.forEach(function(tier) {
-                                                            var t_start = parseFloat(tier.start) || 0;
-                                                            var t_end = parseFloat(tier.end) || Infinity;
-                                                            var t_rate = parseFloat(tier.charge) || 0;
-                                                            if (distancMileResult > t_start) {
-                                                                var distance_in_tier = Math.min(distancMileResult, t_end) - t_start;
-                                                                temp_charge += (distance_in_tier * t_rate);
-                                                            }
-                                                        });
                                                         
                                                         var base_calc = Math.max(temp_charge, js_min_shipping);
                                                         if (temp_charge === 0 && distancMileResult > 0) {
