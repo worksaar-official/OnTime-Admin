@@ -332,6 +332,27 @@
                                             </div>
                                         </div>
 
+                                        <div class="col-md-6 col-lg-4 distance-charge-field tier-charge-field">
+                                            <div class="form-group mb-0">
+                                                <label
+                                                    class="input-label text-capitalize fs-14 d-flex align-items-center line--limit-1">
+                                                    {{ translate('messages.Extra_Vehicle_Charge') }}
+                                                </label>
+                                                <div
+                                                    class="d-flex align-items-center flex-wrap rounded py-2 px-2 border min-h-45px justify-content-center gap-2">
+                                                    <label class="toggle-switch toggle-switch-sm">
+                                                        <input type="checkbox" class="toggle-switch-input"
+                                                            name="module_data[{{ $module->id }}][extra_vehicle_charge]"
+                                                            value="1"
+                                                            {{ $pivot?->extra_vehicle_charge ? 'checked' : '' }}>
+                                                        <span class="toggle-switch-label">
+                                                            <span class="toggle-switch-indicator"></span>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="col-12 tier-charge-field">
                                             <div class="mt-4">
                                                 <div class="d-flex justify-content-between align-items-center mb-3">
