@@ -963,6 +963,8 @@ trait PlaceNewOrder
 
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
                         $extra_charges = 0;
+                    } else {
+                        info('DEBUG: Extra Vehicle Charge condition met in Backend. Extra: '.$extra_charges);
                     }
                 }
             } else {
@@ -981,6 +983,7 @@ trait PlaceNewOrder
 
                 $original_delivery_charge += $extra_charges;
                 $delivery_charge = $original_delivery_charge;
+                info('DEBUG: Final Original Delivery Charge (Backend): '.$original_delivery_charge);
             }
 
             $original_delivery_charge = $original_delivery_charge;
