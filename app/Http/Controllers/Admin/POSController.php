@@ -680,7 +680,7 @@ class POSController extends Controller
             $vehicle_id = (isset($data) ? $data->id  : null);
 
             if ($module_wise_delivery_charge) {
-                if ($module_wise_delivery_charge->pivot->extra_vehicle_charge != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
+                if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
                     $extra_charges = 0;
                 }
             }

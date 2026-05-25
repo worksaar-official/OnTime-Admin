@@ -961,7 +961,7 @@ trait PlaceNewOrder
                     $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->maximum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
 
-                    if ($module_wise_delivery_charge->pivot->extra_vehicle_charge != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
+                    if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
                         $extra_charges = 0;
                     }
                 }

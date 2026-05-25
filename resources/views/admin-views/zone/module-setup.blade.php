@@ -342,9 +342,9 @@
                                                     class="d-flex align-items-center flex-wrap rounded py-2 px-2 border min-h-45px justify-content-center gap-2">
                                                     <label class="toggle-switch toggle-switch-sm">
                                                         <input type="checkbox" class="toggle-switch-input"
-                                                            name="module_data[{{ $module->id }}][extra_vehicle_charge]"
+                                                            name="module_data[{{ $module->id }}][extra_vehicle_charge_toggle]"
                                                             value="1"
-                                                            {{ $pivot?->extra_vehicle_charge ? 'checked' : '' }}>
+                                                            {{ $pivot?->extra_vehicle_charge_toggle ? 'checked' : '' }}>
                                                         <span class="toggle-switch-label">
                                                             <span class="toggle-switch-indicator"></span>
                                                         </span>

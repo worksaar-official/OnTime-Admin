@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('module_zone', function (Blueprint $table) {
-            $table->boolean('extra_vehicle_charge')->default(0)->after('maximum_cod_order_amount');
+            $table->boolean('extra_vehicle_charge_toggle')->default(0)->after('maximum_cod_order_amount');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('module_zone', function (Blueprint $table) {
-            $table->dropColumn('extra_vehicle_charge');
+            $table->dropColumn('extra_vehicle_charge_toggle');
         });
     }
 };
