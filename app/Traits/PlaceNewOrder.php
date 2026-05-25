@@ -961,15 +961,15 @@ trait PlaceNewOrder
                     $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->maximum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
 
-                    info('extra_vehicle_charge_toggle: ' . ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle ?? 'null'));
+                    info('--- Delivery Charge Debug Start ---');
+                    info('extra_vehicle_charge_toggle: ' . ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle ?? '0'));
                     info('delivery_charge_type: ' . ($module_wise_delivery_charge->pivot->delivery_charge_type ?? 'null'));
 
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1 && $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance') {
-                        $per_km_shipping_charge += $extra_charges;
-                        info('Extra charges added to per_km: ' . $extra_charges . '. New per_km: ' . $per_km_shipping_charge);
-                        $extra_charges = 0;
+                        info('Extra charges will be added at the end: ' . $extra_charges);
                     } else {
                         $extra_charges = 0;
+                        info('Toggle is OFF or not Distance Wise. Extra charges set to 0');
                     }
                 }
             } else {
@@ -992,8 +992,11 @@ trait PlaceNewOrder
             $original_delivery_charge += $extra_charges;
             $delivery_charge += $extra_charges;
 
-            info('Final original_delivery_charge: ' . $original_delivery_charge);
-            info('Final delivery_charge: ' . $delivery_charge);
+            info('Distance: ' . ($request->distance ?? 0));
+            info('Per Km Charge: ' . $per_km_shipping_charge);
+            info('Base Delivery Charge (Distance * PerKm): ' . ($request->distance * $per_km_shipping_charge));
+            info('Final Delivery Charge (+ Extra Charge): ' . $delivery_charge);
+            info('--- Delivery Charge Debug End ---');
         } else {
             $parcel_category = ParcelCategory::find($request->parcel_category_id);
             if ($parcel_category?->parcel_minimum_shipping_charge) {
