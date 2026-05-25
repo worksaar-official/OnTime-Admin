@@ -906,9 +906,6 @@ trait PlaceNewOrder
                     $tiers = $module_wise_delivery_charge->pivot->tiered_delivery_charge ?? [];
                     $tier_wise = $module_wise_delivery_charge->pivot->tier_wise_delivery_charge ?? 0;
                     
-                    info('--- Tier Wise Delivery Debug Start ---');
-                    info('extra_vehicle_charge_toggle: ' . ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle ?? '0'));
-
                     if ($tier_wise == 1) {
                         // TIER-WISE (Incremental Accumulation)
                         $temp_charge = 0;
@@ -935,11 +932,8 @@ trait PlaceNewOrder
 
                     // Extra Charge logic for Tier Wise
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1) {
-                        if ($temp_charge > 0) {
-                            info('Tier Charge > 0. Adding Extra Charge: ' . $extra_charges);
-                        } else {
+                        if ($temp_charge <= 0) {
                             $extra_charges = 0;
-                            info('Tier Charge is 0. Skipping Extra Charge.');
                         }
                     } else {
                         $extra_charges = 0;
@@ -964,9 +958,6 @@ trait PlaceNewOrder
                         $delivery_charge = $maximum_shipping_charge;
                     }
 
-                    info('Final Tier Delivery Charge: ' . $delivery_charge);
-                    info('--- Tier Wise Delivery Debug End ---');
-
                     return [
                         'vehicle_id' => $vehicle_id,
                         'original_delivery_charge' => $original_delivery_charge,
@@ -983,13 +974,12 @@ trait PlaceNewOrder
                     info('delivery_charge_type: ' . ($module_wise_delivery_charge->pivot->delivery_charge_type ?? 'null'));
 
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1 && $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance') {
-                        info('Extra charges will be added at the end for Distance Wise: ' . $extra_charges);
+                        // Extra charges will be added at the end for Distance Wise
                     } else {
                         // This else now only handles Distance type with toggle OFF, 
                         // Tier type is already handled and returned above.
                         if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'distance') {
                             $extra_charges = 0;
-                            info('Distance Wise toggle is OFF. Extra charges set to 0');
                         }
                     }
                 }
@@ -1012,12 +1002,6 @@ trait PlaceNewOrder
 
             $original_delivery_charge += $extra_charges;
             $delivery_charge += $extra_charges;
-
-            info('Distance: ' . ($request->distance ?? 0));
-            info('Per Km Charge: ' . $per_km_shipping_charge);
-            info('Base Delivery Charge (Distance * PerKm): ' . ($request->distance * $per_km_shipping_charge));
-            info('Final Delivery Charge (+ Extra Charge): ' . $delivery_charge);
-            info('--- Delivery Charge Debug End ---');
         } else {
             $parcel_category = ParcelCategory::find($request->parcel_category_id);
             if ($parcel_category?->parcel_minimum_shipping_charge) {
