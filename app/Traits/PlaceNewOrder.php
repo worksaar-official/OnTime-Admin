@@ -963,9 +963,6 @@ trait PlaceNewOrder
 
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
                         $extra_charges = 0;
-                        info('DEBUG: Backend - Extra Charge NOT applicable');
-                    } else {
-                        info('DEBUG: Backend - Extra Charge APPLICABLE. Amount: '.$extra_charges);
                     }
                 }
             } else {
@@ -976,23 +973,17 @@ trait PlaceNewOrder
                 ];
             }
 
-            if (! isset($delivery_charge)) {
-                $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
-                if ($maximum_shipping_charge >= $minimum_shipping_charge && $original_delivery_charge > $maximum_shipping_charge) {
-                    $original_delivery_charge = $maximum_shipping_charge;
-                }
-
-                $original_delivery_charge += $extra_charges;
-                $delivery_charge = $original_delivery_charge;
-            } else {
-                $original_delivery_charge += $extra_charges;
-                $delivery_charge += $extra_charges;
+            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
+            if ($maximum_shipping_charge >= $minimum_shipping_charge && $original_delivery_charge > $maximum_shipping_charge) {
+                $original_delivery_charge = $maximum_shipping_charge;
             }
-            info('DEBUG: Final Original Delivery Charge (Backend - Fixed): '.$original_delivery_charge);
-            info('DEBUG: Final Delivery Charge (Backend - Fixed): '.$delivery_charge);
 
-            $original_delivery_charge = $original_delivery_charge;
-            $delivery_charge = $delivery_charge;
+            if (! isset($delivery_charge)) {
+                $delivery_charge = $original_delivery_charge;
+            }
+
+            $original_delivery_charge += $extra_charges;
+            $delivery_charge += $extra_charges;
         } else {
             $parcel_category = ParcelCategory::find($request->parcel_category_id);
             if ($parcel_category?->parcel_minimum_shipping_charge) {
@@ -1008,7 +999,7 @@ trait PlaceNewOrder
                 $minimum_shipping_charge = (float) ($businessSetting['parcel_minimum_shipping_charge'] ?? 0);
             }
 
-            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? ($request->distance * $per_km_shipping_charge) : ($minimum_shipping_charge);
+            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? ($request->distance * $per_km_shipping_charge) + $extra_charges : ($minimum_shipping_charge + $extra_charges);
         }
 
         if ($increased > 0) {

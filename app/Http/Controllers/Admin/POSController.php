@@ -663,6 +663,8 @@ class POSController extends Controller
         $extra_charges = 0;
         $vehicle_id = null;
 
+        $module_wise_delivery_charge = $store->zone ? $store->zone->modules()->where('modules.id', $store->module_id)->first() : null;
+
         if($self_delivery_status != 1){
 
             $data =  DMVehicle::where(function ($query) use ($distance_data) {
@@ -676,6 +678,12 @@ class POSController extends Controller
 
             $extra_charges = (float) (isset($data) ? $data->extra_charges  : 0);
             $vehicle_id = (isset($data) ? $data->id  : null);
+
+            if ($module_wise_delivery_charge) {
+                if ($module_wise_delivery_charge->pivot->extra_vehicle_charge != 1 || $module_wise_delivery_charge->pivot->delivery_charge_type != 'distance') {
+                    $extra_charges = 0;
+                }
+            }
         }
 
 
