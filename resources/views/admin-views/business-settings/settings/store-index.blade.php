@@ -266,8 +266,8 @@
                                                     data-title-off="<strong>{{ translate('Are you sure to disable Hide Customer Details on Delivery?') }}</strong>"
                                                     data-text-on="{{ translate('If enabled, vendors will not be able to see customer details (name, phone, address) after the order has been delivered.') }}"
                                                     data-text-off="{{ translate('If disabled, vendors will be able to see customer details at all times.') }}"
-                                                    data-footer-text-on="<div class='text-center text-info mt-5'>{{ translate('Note : Don't forget to save the information before leaving this page ') }}</div>"
-                                                    data-footer-text-off="<div class='text-center text-info mt-5'>{{ translate('Note : Don't forget to save the information before leaving this page ') }}</div>"
+                                                    data-footer-text-on="<div class='text-center text-info mt-5'>{{ translate('Note : Don’t forget to save the information before leaving this page ') }}</div>"
+                                                    data-footer-text-off="<div class='text-center text-info mt-5'>{{ translate('Note : Don’t forget to save the information before leaving this page ') }}</div>"
                                                     class="status toggle-switch-input dynamic-checkbox-toggle"
                                                     name="hide_customer_details_on_delivery" id="hide_customer_details_on_delivery" value="1"
                                                     {{ $hide_customer_details_on_delivery ? 'checked' : '' }}>

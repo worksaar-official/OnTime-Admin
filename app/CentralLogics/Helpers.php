@@ -979,6 +979,64 @@ class Helpers
         return ['item' => $items, 'store' => $stores];
     }
 
+    public static function should_hide_customer_details_on_delivery($order_status): bool
+    {
+        if ($order_status !== 'delivered') {
+            return false;
+        }
+
+        return (int) (self::get_business_settings('hide_customer_details_on_delivery') ?? 0) === 1;
+    }
+
+    public static function mask_delivery_address_customer_details($delivery_address)
+    {
+        if (!is_array($delivery_address)) {
+            return $delivery_address;
+        }
+
+        $masked_fields = [
+            'contact_person_name',
+            'contact_person_number',
+            'contact_person_email',
+            'address',
+            'latitude',
+            'longitude',
+            'floor',
+            'road',
+            'house',
+        ];
+
+        foreach ($masked_fields as $field) {
+            if (array_key_exists($field, $delivery_address)) {
+                $delivery_address[$field] = '';
+            }
+        }
+
+        return $delivery_address;
+    }
+
+    public static function mask_order_customer_details($order)
+    {
+        if (!self::should_hide_customer_details_on_delivery($order->order_status ?? null)) {
+            return;
+        }
+
+        if (isset($order->delivery_address)) {
+            $delivery_address = is_array($order->delivery_address)
+                ? $order->delivery_address
+                : json_decode($order->delivery_address, true);
+            $order->delivery_address = self::mask_delivery_address_customer_details($delivery_address);
+        }
+
+        if ($order->relationLoaded('customer') && $order->customer) {
+            $order->customer->f_name = '';
+            $order->customer->l_name = '';
+            $order->customer->phone = '';
+            $order->customer->email = '';
+            $order->customer->image = null;
+        }
+    }
+
     public static function order_data_formatting($data, $multi_data = false)
     {
         $storage = [];
@@ -1024,6 +1082,7 @@ class Helpers
                 }
 
                 $item['delivery_address'] = is_array($item->delivery_address )? $item->delivery_address : json_decode($item->delivery_address, true);
+                self::mask_order_customer_details($item);
                 $item['details_count'] = (int) $item->details->count();
                 $item['min_delivery_time'] = $item->store ? (int) explode('-', $item->store?->delivery_time)[0] ?? 0 : 0;
                 $item['max_delivery_time'] = $item->store ? (int) explode('-', $item->store?->delivery_time)[1] ?? 0 : 0;
@@ -1072,6 +1131,7 @@ class Helpers
                 }
             }
             $data['delivery_address'] = is_array($data->delivery_address )? $data->delivery_address : json_decode($data->delivery_address, true);
+            self::mask_order_customer_details($data);
             $data['details_count'] = (int) $data->details->count();
 
             unset($data['details']);

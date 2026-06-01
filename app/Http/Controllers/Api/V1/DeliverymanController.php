@@ -748,6 +748,7 @@ class DeliverymanController extends Controller
             return response()->json($details, 200);
         } elseif ($order->order_type == 'parcel') {
             $order->delivery_address = $order->delivery_address ? json_decode($order->delivery_address, true) : [];
+            Helpers::mask_order_customer_details($order);
 
             return response()->json(($order), 200);
         } elseif ($order->prescription_order == 1) {

@@ -258,6 +258,7 @@ class BusinessSettingsController extends Controller
             'canceled_by_deliveryman',
             'show_dm_earning',
             'dm_picture_upload_status',
+            'hide_customer_details_on_delivery',
             'dm_loyality_point_status',
             'dm_loyality_point_per_order',
             'dm_loyality_point_conversion_rate',
@@ -308,6 +309,10 @@ class BusinessSettingsController extends Controller
 
         Helpers::businessUpdateOrInsert(['key' => 'store_review_reply'], [
             'value' => $request['store_review_reply'],
+        ]);
+
+        Helpers::businessUpdateOrInsert(['key' => 'hide_customer_details_on_delivery'], [
+            'value' => $request['hide_customer_details_on_delivery'] ?? 0,
         ]);
 
         Helpers::businessUpdateOrInsert(['key' => 'canceled_by_store'], [

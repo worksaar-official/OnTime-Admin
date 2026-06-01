@@ -538,6 +538,7 @@ class VendorController extends Controller
             return response()->json($details, 200);
         } else if ($order->order_type == 'parcel' || $order->prescription_order == 1) {
             $order->delivery_address = json_decode($order->delivery_address, true);
+            Helpers::mask_order_customer_details($order);
             if($order->prescription_order && $order->order_attachment){
                 $order->order_attachment = is_array($order->order_attachment)? $order->order_attachment : json_decode($order->order_attachment, true);
             }
