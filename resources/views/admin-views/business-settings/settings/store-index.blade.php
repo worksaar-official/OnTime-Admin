@@ -238,45 +238,6 @@
                                             </label>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 col-sm-6">
-                                        @php($hide_customer_details_on_delivery = \App\Models\BusinessSetting::where('key', 'hide_customer_details_on_delivery')->first())
-                                        @php($hide_customer_details_on_delivery = $hide_customer_details_on_delivery ? $hide_customer_details_on_delivery->value : 0)
-                                        <div class="form-group mb-0">
-                                            <span class="mb-2 d-flex align-items-center">
-                                                <span class="text-title">
-                                                    {{ translate('Hide_Customer_Details_on_Delivery') }}
-                                                </span>
-                                                <span class="form-label-secondary text-danger d-flex align-items-center gap-1"
-                                                        data-toggle="tooltip" data-placement="right"
-                                                        data-original-title="{{ translate('If enabled, customer details (name, phone, address) will not be displayed to vendors after order delivery for privacy protection') }}"><i class="tio-info text-muted ps--3"></i>
-                                                </span>
-                                            </span>
-                                            <label
-                                                class="toggle-switch h--45px toggle-switch-sm d-flex justify-content-between border rounded px-3 py-0 form-control">
-                                                <span class="pr-1 d-flex align-items-center switch--label">
-                                                    <span class="line--limit-1 text-title">
-                                                        {{ translate('Hide_Details') }}
-                                                    </span>
-                                                </span>
-
-                                                <input type="checkbox" data-id="hide_customer_details_on_delivery" data-type="toggle"
-                                                    data-image-on="{{ asset('/public/assets/admin/img/modal/info-warning.png') }}"
-                                                    data-image-off="{{ asset('/public/assets/admin/img/modal/info-warning.png') }}"
-                                                    data-title-on="<strong>{{ translate('Are you sure to enable Hide Customer Details on Delivery?') }}</strong>"
-                                                    data-title-off="<strong>{{ translate('Are you sure to disable Hide Customer Details on Delivery?') }}</strong>"
-                                                    data-text-on="{{ translate('If enabled, vendors will not be able to see customer details (name, phone, address) after the order has been delivered.') }}"
-                                                    data-text-off="{{ translate('If disabled, vendors will be able to see customer details at all times.') }}"
-                                                    data-footer-text-on="<div class='text-center text-info mt-5'>{{ translate('Note : Don’t forget to save the information before leaving this page ') }}</div>"
-                                                    data-footer-text-off="<div class='text-center text-info mt-5'>{{ translate('Note : Don’t forget to save the information before leaving this page ') }}</div>"
-                                                    class="status toggle-switch-input dynamic-checkbox-toggle"
-                                                    name="hide_customer_details_on_delivery" id="hide_customer_details_on_delivery" value="1"
-                                                    {{ $hide_customer_details_on_delivery ? 'checked' : '' }}>
-                                                <span class="toggle-switch-label text">
-                                                    <span class="toggle-switch-indicator"></span>
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
 
@@ -508,6 +469,8 @@
                         </div>
                     </div>
 
+                    @include('admin-views.business-settings.partials.hide-customer-details-on-delivery-card', ['idSuffix' => 'store'])
+
                     @includeIf('admin-views.partials._floating-submit-button')
                 </div>
             </div>
@@ -713,6 +676,7 @@
                     $('#inlineCheckbox4').prop('checked', false);
                 }
             });
+
         });
     </script>
 @endpush

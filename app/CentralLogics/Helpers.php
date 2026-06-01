@@ -979,36 +979,89 @@ class Helpers
         return ['item' => $items, 'store' => $stores];
     }
 
+    public static function is_hide_customer_details_on_delivery_enabled(): bool
+    {
+        foreach ([
+            'hide_customer_email_on_delivery',
+            'hide_customer_phone_on_delivery',
+            'hide_customer_address_on_delivery',
+        ] as $key) {
+            if ((int) (self::get_business_settings($key) ?? 0) === 1) {
+                return true;
+            }
+        }
+
+        return (int) (self::get_business_settings('hide_customer_details_on_delivery') ?? 0) === 1;
+    }
+
     public static function should_hide_customer_details_on_delivery($order_status): bool
     {
         if ($order_status !== 'delivered') {
             return false;
         }
 
-        return (int) (self::get_business_settings('hide_customer_details_on_delivery') ?? 0) === 1;
+        return self::is_hide_customer_details_on_delivery_enabled();
     }
 
-    public static function mask_delivery_address_customer_details($delivery_address)
+    public static function get_hide_customer_detail_flags(): array
+    {
+        $email = (int) (self::get_business_settings('hide_customer_email_on_delivery') ?? 0) === 1;
+        $phone = (int) (self::get_business_settings('hide_customer_phone_on_delivery') ?? 0) === 1;
+        $address = (int) (self::get_business_settings('hide_customer_address_on_delivery') ?? 0) === 1;
+        $master = (int) (self::get_business_settings('hide_customer_details_on_delivery') ?? 0) === 1;
+
+        // Legacy: only the old master toggle was enabled (no per-field options saved).
+        if ($master && !$email && !$phone && !$address) {
+            return [
+                'name' => false,
+                'email' => true,
+                'phone' => true,
+                'address' => true,
+            ];
+        }
+
+        return [
+            'name' => false,
+            'email' => $email,
+            'phone' => $phone,
+            'address' => $address,
+        ];
+    }
+
+    public static function sync_hide_customer_details_on_delivery_master(array $hideFieldValues): void
+    {
+        $anyEnabled = collect($hideFieldValues)->contains(fn ($value) => (int) $value === 1);
+
+        self::businessUpdateOrInsert(['key' => 'hide_customer_details_on_delivery'], [
+            'value' => $anyEnabled ? 1 : 0,
+        ]);
+    }
+
+    public static function mask_delivery_address_customer_details($delivery_address, ?array $flags = null)
     {
         if (!is_array($delivery_address)) {
             return $delivery_address;
         }
 
-        $masked_fields = [
-            'contact_person_name',
-            'contact_person_number',
-            'contact_person_email',
-            'address',
-            'latitude',
-            'longitude',
-            'floor',
-            'road',
-            'house',
-        ];
+        $flags = $flags ?? self::get_hide_customer_detail_flags();
 
-        foreach ($masked_fields as $field) {
-            if (array_key_exists($field, $delivery_address)) {
-                $delivery_address[$field] = '';
+        if ($flags['name'] && array_key_exists('contact_person_name', $delivery_address)) {
+            $delivery_address['contact_person_name'] = '';
+        }
+
+        if ($flags['phone'] && array_key_exists('contact_person_number', $delivery_address)) {
+            $delivery_address['contact_person_number'] = '';
+        }
+
+        if ($flags['email'] && array_key_exists('contact_person_email', $delivery_address)) {
+            $delivery_address['contact_person_email'] = '';
+        }
+
+        if ($flags['address']) {
+            foreach (['address', 'latitude', 'longitude', 'floor', 'road', 'house'] as $field) {
+                if (array_key_exists($field, $delivery_address)) {
+                    $delivery_address[$field] = '';
+                }
             }
         }
 
@@ -1021,19 +1074,34 @@ class Helpers
             return;
         }
 
+        $flags = self::get_hide_customer_detail_flags();
+
         if (isset($order->delivery_address)) {
             $delivery_address = is_array($order->delivery_address)
                 ? $order->delivery_address
                 : json_decode($order->delivery_address, true);
-            $order->delivery_address = self::mask_delivery_address_customer_details($delivery_address);
+            $order->delivery_address = self::mask_delivery_address_customer_details($delivery_address, $flags);
+        }
+
+        if (isset($order->receiver_details)) {
+            $receiver_details = is_array($order->receiver_details)
+                ? $order->receiver_details
+                : json_decode($order->receiver_details, true);
+            $order->receiver_details = self::mask_delivery_address_customer_details($receiver_details, $flags);
         }
 
         if ($order->relationLoaded('customer') && $order->customer) {
-            $order->customer->f_name = '';
-            $order->customer->l_name = '';
-            $order->customer->phone = '';
-            $order->customer->email = '';
-            $order->customer->image = null;
+            if ($flags['name']) {
+                $order->customer->f_name = '';
+                $order->customer->l_name = '';
+                $order->customer->image = null;
+            }
+            if ($flags['phone']) {
+                $order->customer->phone = '';
+            }
+            if ($flags['email']) {
+                $order->customer->email = '';
+            }
         }
     }
 
