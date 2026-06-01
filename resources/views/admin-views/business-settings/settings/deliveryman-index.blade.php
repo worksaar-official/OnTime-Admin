@@ -275,6 +275,43 @@
                                             </label>
                                         </div>
                                     </div>
+                                    <div class="col-sm-6 col-lg-4">
+                                        @php($hide_customer_details_on_delivery = Helpers::get_business_settings('hide_customer_details_on_delivery'))
+                                        <div class="form-group mb-0">
+                                            <span class="d-flex align-items-center mb-2">
+                                                <span class="text-dark pr-1">
+                                                    {{ translate('messages.Hide Customer Details on Delivery') }}
+                                                </span>
+                                                <span class="form-label-secondary" data-toggle="tooltip" data-placement="right" data-original-title="{{ translate('messages.If_enabled,_deliverymen_will_not_see_customer_details_(name,_phone,_address)_after_order_is_delivered.') }}">
+                                                    <i class="tio-info text-light-gray"></i>
+                                                </span>
+                                            </span>
+                                            <label
+                                                class="toggle-switch h--45px toggle-switch-sm d-flex justify-content-between border rounded px-3 py-0 form-control">
+                                                <span class="pr-1 d-flex align-items-center switch--label">
+                                                    <span class="line--limit-1">
+                                                        {{ translate('messages.Status') }}
+                                                    </span>
+                                                </span>
+                                                <input type="checkbox"
+                                                        data-id="hide_customer_details_on_delivery"
+                                                        data-type="toggle"
+                                                        data-image-on="{{ asset('/public/assets/admin/img/modal/dm-self-reg-on.png') }}"
+                                                        data-image-off="{{ asset('/public/assets/admin/img/modal/dm-self-reg-off.png') }}"
+                                                        data-title-on="{{ translate('messages.Want_to_enable') }} <strong>{{ translate('messages.Hide_Customer_Details_on_Delivery?') }}</strong>"
+                                                        data-title-off="{{ translate('messages.Want_to_disable') }} <strong>{{ translate('messages.Hide_Customer_Details_on_Delivery?') }}</strong>"
+                                                        data-text-on="<p>{{ translate('messages.If_you_enable_this,_deliverymen_will_not_see_customer_details_after_order_delivery.') }}</p>"
+                                                        data-text-off="<p>{{ translate('messages.If_you_disable_this,_deliverymen_will_see_customer_details_at_all_times.') }}</p>"
+                                                        class="status toggle-switch-input dynamic-checkbox-toggle"
+                                                        value="1"
+                                                    name="hide_customer_details_on_delivery" id="hide_customer_details_on_delivery"
+                                                    {{ $hide_customer_details_on_delivery == 1 ? 'checked' : '' }}>
+                                                <span class="toggle-switch-label text">
+                                                    <span class="toggle-switch-indicator"></span>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
