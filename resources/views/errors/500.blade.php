@@ -59,6 +59,7 @@
 
 
 <!-- JS Front -->
+<script src="{{asset('public/assets/admin')}}/js/vendor.min.js"></script>
 <script src="{{asset('public/assets/admin')}}/js/theme.min.js"></script>
 </body>
 

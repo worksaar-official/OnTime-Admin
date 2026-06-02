@@ -1105,7 +1105,7 @@
                                                     alt="order image">
 
                                                 <div class="pen spartan_remove_row"><i class="tio-edit"></i></div>
-                                                <a href="{{ route('vendor.order.remove-proof-image', ['id' => $order['id'], 'name' => $photo]) }}"
+                                                <a href="{{ route('vendor.order.remove-proof-image', ['id' => $order['id'], 'name' => is_array($photo) ? ($photo['img'] ?? '') : $photo]) }}"
                                                     class="spartan_remove_row"><i class="tio-add-to-trash"></i></a>
                                             </div>
                                         @endforeach
