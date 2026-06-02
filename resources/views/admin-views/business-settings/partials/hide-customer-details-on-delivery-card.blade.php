@@ -7,6 +7,11 @@
     $hide_customer_email_on_delivery = Helpers::get_business_settings("hide_customer_email_on_delivery_{$settingPrefix}");
     $hide_customer_phone_on_delivery = Helpers::get_business_settings("hide_customer_phone_on_delivery_{$settingPrefix}");
     $hide_customer_address_on_delivery = Helpers::get_business_settings("hide_customer_address_on_delivery_{$settingPrefix}");
+    $hideCustomerCurrentValues = [
+        "hide_customer_phone_on_delivery_{$settingPrefix}" => (int) ($hide_customer_phone_on_delivery ?? 0),
+        "hide_customer_email_on_delivery_{$settingPrefix}" => (int) ($hide_customer_email_on_delivery ?? 0),
+        "hide_customer_address_on_delivery_{$settingPrefix}" => (int) ($hide_customer_address_on_delivery ?? 0),
+    ];
     $hide_customer_details_legacy_all = $hide_customer_details_on_delivery == 1 && !$hide_customer_email_on_delivery && !$hide_customer_phone_on_delivery && !$hide_customer_address_on_delivery;
     $isStore = $idSuffix === 'store';
     $hideCustomerFields = [
@@ -47,7 +52,7 @@
         </div>
         <div class="row g-3">
             @foreach ($hideCustomerFields as $subKey => $field)
-                @php($subValue = $$subKey ?? 0)
+                @php($subValue = $hideCustomerCurrentValues[$subKey] ?? 0)
                 @php($isHidden = ($subValue == 1 || $hide_customer_details_legacy_all))
                 <div class="col-sm-6 col-lg-4">
                     <div class="form-group mb-0">
