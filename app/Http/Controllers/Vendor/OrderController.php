@@ -224,6 +224,10 @@ class OrderController extends Controller
             return $query->withCount('orders');
         }])->where(['id' => $id, 'store_id' => Helpers::get_store_id()])->first();
         if (isset($order)) {
+            if (!$order->store || !$order->store->module) {
+                Toastr::error(translate('messages.store_data_not_found_for_this_order'));
+                return redirect()->route('vendor.order.list', ['status' => 'all']);
+            }
             Helpers::mask_order_customer_details($order, 'store');
             $reasons=OrderCancelReason::where('status', 1)->where('user_type' ,'store' )->get();
             return view('vendor-views.order.order-view', compact('order' ,'reasons'));
