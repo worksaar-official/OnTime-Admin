@@ -1024,6 +1024,12 @@ class Helpers
 
     public static function should_hide_customer_details_on_delivery($order_status, ?string $viewerType = null): bool
     {
+        // Vendor/store visibility rules apply for all order statuses.
+        if ($viewerType === 'store') {
+            return self::is_hide_customer_details_on_delivery_enabled($viewerType);
+        }
+
+        // Deliveryman and other viewers: apply only after delivery.
         if ($order_status !== 'delivered') {
             return false;
         }
