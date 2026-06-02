@@ -37,11 +37,11 @@
     <div class="card-body">
         <div class="mb-20">
             <h3 class="mb-1">
-                {{ $isStore ? translate('messages.Hide_Customer_Details') : translate('messages.Hide_Customer_Details_After_Order_Delivered') }}
+                {{ $isStore ? 'Hide Customer Details for Vendor' : translate('messages.Hide_Customer_Details_After_Order_Delivered') }}
             </h3>
             <p class="mb-0 fs-12">
-                {{ $isStore ? translate('Choose which customer details to hide for vendors in all order statuses') : translate('messages.Hide_customer_details_only_when_order_delivered') }}.
-                {{ $isStore ? translate('These settings apply immediately on vendor panel and app') : translate('messages.Choose_which_customer_details_to_hide_when_delivered') }}.
+                {{ $isStore ? 'Works for all order statuses. Vendors will see or not see customer details based on these toggles immediately.' : translate('messages.Hide_customer_details_only_when_order_delivered') }}.
+                {{ $isStore ? 'This does not depend on delivered status for vendor side.' : translate('messages.Choose_which_customer_details_to_hide_when_delivered') }}.
                 {{ translate('messages.Customer_name_is_always_visible') }}
             </p>
         </div>
