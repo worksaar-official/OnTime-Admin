@@ -1,32 +1,34 @@
 @php
     use App\CentralLogics\Helpers;
     $idSuffix = $idSuffix ?? 'dm';
-    $hide_customer_details_on_delivery = Helpers::get_business_settings('hide_customer_details_on_delivery');
-    $hide_customer_email_on_delivery = Helpers::get_business_settings('hide_customer_email_on_delivery');
-    $hide_customer_phone_on_delivery = Helpers::get_business_settings('hide_customer_phone_on_delivery');
-    $hide_customer_address_on_delivery = Helpers::get_business_settings('hide_customer_address_on_delivery');
+    $settingPrefix = $idSuffix === 'store' ? 'store' : 'dm';
+    $masterSettingKey = "hide_customer_details_on_delivery_{$settingPrefix}";
+    $hide_customer_details_on_delivery = Helpers::get_business_settings($masterSettingKey);
+    $hide_customer_email_on_delivery = Helpers::get_business_settings("hide_customer_email_on_delivery_{$settingPrefix}");
+    $hide_customer_phone_on_delivery = Helpers::get_business_settings("hide_customer_phone_on_delivery_{$settingPrefix}");
+    $hide_customer_address_on_delivery = Helpers::get_business_settings("hide_customer_address_on_delivery_{$settingPrefix}");
     $hide_customer_details_legacy_all = $hide_customer_details_on_delivery == 1 && !$hide_customer_email_on_delivery && !$hide_customer_phone_on_delivery && !$hide_customer_address_on_delivery;
     $hideCustomerFields = [
-        'hide_customer_phone_on_delivery' => [
-            'label' => 'Hide_Customer_Phone_After_Delivered',
-            'enable_title' => 'Want_to_enable_hide_customer_phone_after_delivered',
-            'disable_title' => 'Want_to_disable_hide_customer_phone_after_delivered',
-            'enable_text' => $idSuffix === 'store' ? 'Hide_customer_phone_from_vendors_after_delivered' : 'Hide_customer_phone_from_deliverymen_after_delivered',
-            'disable_text' => $idSuffix === 'store' ? 'Show_customer_phone_to_vendors_after_delivered' : 'Show_customer_phone_to_deliverymen_after_delivered',
+        "hide_customer_phone_on_delivery_{$settingPrefix}" => [
+            'label' => 'Show Customer Phone After Delivered',
+            'enable_title' => 'Want to enable Show Customer Phone After Delivered?',
+            'disable_title' => 'Want to disable Show Customer Phone After Delivered?',
+            'enable_text' => $idSuffix === 'store' ? 'If enabled, vendors can see customer phone after order is delivered.' : 'If enabled, deliverymen can see customer phone after order is delivered.',
+            'disable_text' => $idSuffix === 'store' ? 'If disabled, customer phone will be hidden from vendors after order is delivered.' : 'If disabled, customer phone will be hidden from deliverymen after order is delivered.',
         ],
-        'hide_customer_email_on_delivery' => [
-            'label' => 'Hide_Customer_Email_After_Delivered',
-            'enable_title' => 'Want_to_enable_hide_customer_email_after_delivered',
-            'disable_title' => 'Want_to_disable_hide_customer_email_after_delivered',
-            'enable_text' => $idSuffix === 'store' ? 'Hide_customer_email_from_vendors_after_delivered' : 'Hide_customer_email_from_deliverymen_after_delivered',
-            'disable_text' => $idSuffix === 'store' ? 'Show_customer_email_to_vendors_after_delivered' : 'Show_customer_email_to_deliverymen_after_delivered',
+        "hide_customer_email_on_delivery_{$settingPrefix}" => [
+            'label' => 'Show Customer Email After Delivered',
+            'enable_title' => 'Want to enable Show Customer Email After Delivered?',
+            'disable_title' => 'Want to disable Show Customer Email After Delivered?',
+            'enable_text' => $idSuffix === 'store' ? 'If enabled, vendors can see customer email after order is delivered.' : 'If enabled, deliverymen can see customer email after order is delivered.',
+            'disable_text' => $idSuffix === 'store' ? 'If disabled, customer email will be hidden from vendors after order is delivered.' : 'If disabled, customer email will be hidden from deliverymen after order is delivered.',
         ],
-        'hide_customer_address_on_delivery' => [
-            'label' => 'Hide_Customer_Delivery_Address_After_Delivered',
-            'enable_title' => 'Want_to_enable_hide_customer_address_after_delivered',
-            'disable_title' => 'Want_to_disable_hide_customer_address_after_delivered',
-            'enable_text' => $idSuffix === 'store' ? 'Hide_customer_address_from_vendors_after_delivered' : 'Hide_customer_address_from_deliverymen_after_delivered',
-            'disable_text' => $idSuffix === 'store' ? 'Show_customer_address_to_vendors_after_delivered' : 'Show_customer_address_to_deliverymen_after_delivered',
+        "hide_customer_address_on_delivery_{$settingPrefix}" => [
+            'label' => 'Show Customer Delivery Address After Delivered',
+            'enable_title' => 'Want to enable Show Customer Delivery Address After Delivered?',
+            'disable_title' => 'Want to disable Show Customer Delivery Address After Delivered?',
+            'enable_text' => $idSuffix === 'store' ? 'If enabled, vendors can see customer delivery address after order is delivered.' : 'If enabled, deliverymen can see customer delivery address after order is delivered.',
+            'disable_text' => $idSuffix === 'store' ? 'If disabled, customer delivery address will be hidden from vendors after order is delivered.' : 'If disabled, customer delivery address will be hidden from deliverymen after order is delivered.',
         ],
     ];
 @endphp
@@ -45,10 +47,11 @@
         <div class="row g-3">
             @foreach ($hideCustomerFields as $subKey => $field)
                 @php($subValue = $$subKey ?? 0)
+                @php($isHidden = ($subValue == 1 || $hide_customer_details_legacy_all))
                 <div class="col-sm-6 col-lg-4">
                     <div class="form-group mb-0">
                         <span class="d-flex align-items-center mb-2">
-                            <span class="text-dark pr-1">{{ translate('messages.' . $field['label']) }}</span>
+                            <span class="text-dark pr-1">{{ translate($field['label']) }}</span>
                         </span>
                         <label class="toggle-switch h--45px toggle-switch-sm d-flex justify-content-between border rounded px-3 py-0 form-control mb-0">
                             <span class="pr-1 d-flex align-items-center switch--label">
@@ -59,15 +62,15 @@
                                 data-type="toggle"
                                 data-image-on="{{ asset('/public/assets/admin/img/modal/info-warning.png') }}"
                                 data-image-off="{{ asset('/public/assets/admin/img/modal/info-warning.png') }}"
-                                data-title-on="<strong>{{ translate('messages.' . $field['enable_title']) }}</strong>"
-                                data-title-off="<strong>{{ translate('messages.' . $field['disable_title']) }}</strong>"
-                                data-text-on="<p>{{ translate('messages.' . $field['enable_text']) }}</p>"
-                                data-text-off="<p>{{ translate('messages.' . $field['disable_text']) }}</p>"
+                                data-title-on="<strong>{{ translate($field['enable_title']) }}</strong>"
+                                data-title-off="<strong>{{ translate($field['disable_title']) }}</strong>"
+                                data-text-on="<p>{{ translate($field['enable_text']) }}</p>"
+                                data-text-off="<p>{{ translate($field['disable_text']) }}</p>"
                                 class="status toggle-switch-input dynamic-checkbox-toggle"
                                 value="1"
                                 name="{{ $subKey }}"
                                 id="{{ $subKey }}_{{ $idSuffix }}"
-                                {{ ($subValue == 1 || $hide_customer_details_legacy_all) ? 'checked' : '' }}>
+                                {{ !$isHidden ? 'checked' : '' }}>
                             <span class="toggle-switch-label text">
                                 <span class="toggle-switch-indicator"></span>
                             </span>

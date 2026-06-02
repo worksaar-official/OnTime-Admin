@@ -979,8 +979,36 @@ class Helpers
         return ['item' => $items, 'store' => $stores];
     }
 
-    public static function is_hide_customer_details_on_delivery_enabled(): bool
+    public static function is_hide_customer_details_on_delivery_enabled(?string $viewerType = null): bool
     {
+        if ($viewerType === 'deliveryman') {
+            foreach ([
+                'hide_customer_email_on_delivery_dm',
+                'hide_customer_phone_on_delivery_dm',
+                'hide_customer_address_on_delivery_dm',
+            ] as $key) {
+                if ((int) (self::get_business_settings($key) ?? 0) === 1) {
+                    return true;
+                }
+            }
+
+            return (int) (self::get_business_settings('hide_customer_details_on_delivery_dm') ?? 0) === 1;
+        }
+
+        if ($viewerType === 'store') {
+            foreach ([
+                'hide_customer_email_on_delivery_store',
+                'hide_customer_phone_on_delivery_store',
+                'hide_customer_address_on_delivery_store',
+            ] as $key) {
+                if ((int) (self::get_business_settings($key) ?? 0) === 1) {
+                    return true;
+                }
+            }
+
+            return (int) (self::get_business_settings('hide_customer_details_on_delivery_store') ?? 0) === 1;
+        }
+
         foreach ([
             'hide_customer_email_on_delivery',
             'hide_customer_phone_on_delivery',
@@ -994,17 +1022,63 @@ class Helpers
         return (int) (self::get_business_settings('hide_customer_details_on_delivery') ?? 0) === 1;
     }
 
-    public static function should_hide_customer_details_on_delivery($order_status): bool
+    public static function should_hide_customer_details_on_delivery($order_status, ?string $viewerType = null): bool
     {
         if ($order_status !== 'delivered') {
             return false;
         }
 
-        return self::is_hide_customer_details_on_delivery_enabled();
+        return self::is_hide_customer_details_on_delivery_enabled($viewerType);
     }
 
-    public static function get_hide_customer_detail_flags(): array
+    public static function get_hide_customer_detail_flags(?string $viewerType = null): array
     {
+        if ($viewerType === 'deliveryman') {
+            $email = (int) (self::get_business_settings('hide_customer_email_on_delivery_dm') ?? 0) === 1;
+            $phone = (int) (self::get_business_settings('hide_customer_phone_on_delivery_dm') ?? 0) === 1;
+            $address = (int) (self::get_business_settings('hide_customer_address_on_delivery_dm') ?? 0) === 1;
+            $master = (int) (self::get_business_settings('hide_customer_details_on_delivery_dm') ?? 0) === 1;
+
+            if ($master && !$email && !$phone && !$address) {
+                return [
+                    'name' => false,
+                    'email' => true,
+                    'phone' => true,
+                    'address' => true,
+                ];
+            }
+
+            return [
+                'name' => false,
+                'email' => $email,
+                'phone' => $phone,
+                'address' => $address,
+            ];
+        }
+
+        if ($viewerType === 'store') {
+            $email = (int) (self::get_business_settings('hide_customer_email_on_delivery_store') ?? 0) === 1;
+            $phone = (int) (self::get_business_settings('hide_customer_phone_on_delivery_store') ?? 0) === 1;
+            $address = (int) (self::get_business_settings('hide_customer_address_on_delivery_store') ?? 0) === 1;
+            $master = (int) (self::get_business_settings('hide_customer_details_on_delivery_store') ?? 0) === 1;
+
+            if ($master && !$email && !$phone && !$address) {
+                return [
+                    'name' => false,
+                    'email' => true,
+                    'phone' => true,
+                    'address' => true,
+                ];
+            }
+
+            return [
+                'name' => false,
+                'email' => $email,
+                'phone' => $phone,
+                'address' => $address,
+            ];
+        }
+
         $email = (int) (self::get_business_settings('hide_customer_email_on_delivery') ?? 0) === 1;
         $phone = (int) (self::get_business_settings('hide_customer_phone_on_delivery') ?? 0) === 1;
         $address = (int) (self::get_business_settings('hide_customer_address_on_delivery') ?? 0) === 1;
@@ -1028,11 +1102,16 @@ class Helpers
         ];
     }
 
-    public static function sync_hide_customer_details_on_delivery_master(array $hideFieldValues): void
+    public static function sync_hide_customer_details_on_delivery_master(array $hideFieldValues, ?string $viewerType = null): void
     {
         $anyEnabled = collect($hideFieldValues)->contains(fn ($value) => (int) $value === 1);
+        $masterKey = match ($viewerType) {
+            'deliveryman', 'dm' => 'hide_customer_details_on_delivery_dm',
+            'store' => 'hide_customer_details_on_delivery_store',
+            default => 'hide_customer_details_on_delivery',
+        };
 
-        self::businessUpdateOrInsert(['key' => 'hide_customer_details_on_delivery'], [
+        self::businessUpdateOrInsert(['key' => $masterKey], [
             'value' => $anyEnabled ? 1 : 0,
         ]);
     }
@@ -1068,13 +1147,13 @@ class Helpers
         return $delivery_address;
     }
 
-    public static function mask_order_customer_details($order)
+    public static function mask_order_customer_details($order, ?string $viewerType = null)
     {
-        if (!self::should_hide_customer_details_on_delivery($order->order_status ?? null)) {
+        if (!self::should_hide_customer_details_on_delivery($order->order_status ?? null, $viewerType)) {
             return;
         }
 
-        $flags = self::get_hide_customer_detail_flags();
+        $flags = self::get_hide_customer_detail_flags($viewerType);
 
         if (isset($order->delivery_address)) {
             $delivery_address = is_array($order->delivery_address)
@@ -1105,7 +1184,7 @@ class Helpers
         }
     }
 
-    public static function order_data_formatting($data, $multi_data = false)
+    public static function order_data_formatting($data, $multi_data = false, ?string $viewerType = null)
     {
         $storage = [];
         if ($multi_data) {
@@ -1150,7 +1229,7 @@ class Helpers
                 }
 
                 $item['delivery_address'] = is_array($item->delivery_address )? $item->delivery_address : json_decode($item->delivery_address, true);
-                self::mask_order_customer_details($item);
+                self::mask_order_customer_details($item, $viewerType);
                 $item['details_count'] = (int) $item->details->count();
                 $item['min_delivery_time'] = $item->store ? (int) explode('-', $item->store?->delivery_time)[0] ?? 0 : 0;
                 $item['max_delivery_time'] = $item->store ? (int) explode('-', $item->store?->delivery_time)[1] ?? 0 : 0;
@@ -1199,7 +1278,7 @@ class Helpers
                 }
             }
             $data['delivery_address'] = is_array($data->delivery_address )? $data->delivery_address : json_decode($data->delivery_address, true);
-            self::mask_order_customer_details($data);
+            self::mask_order_customer_details($data, $viewerType);
             $data['details_count'] = (int) $data->details->count();
 
             unset($data['details']);

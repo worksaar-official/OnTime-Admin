@@ -281,7 +281,7 @@ class VendorController extends Controller
 
         ->orderBy('schedule_at', 'desc')
         ->get();
-        $orders= Helpers::order_data_formatting($orders, true);
+        $orders= Helpers::order_data_formatting($orders, true, 'store');
         return response()->json($orders, 200);
     }
 
@@ -312,7 +312,7 @@ class VendorController extends Controller
         ->Notpos()
         ->latest()
         ->paginate($request['limit'], ['*'], 'page', $request['offset']);
-        $orders= Helpers::order_data_formatting($paginator->items(), true);
+        $orders= Helpers::order_data_formatting($paginator->items(), true, 'store');
         $data = [
             'total_size' => $paginator->total(),
             'limit' => $request['limit'],
@@ -343,7 +343,7 @@ class VendorController extends Controller
         ->Notpos()
         ->latest()
         ->paginate($request['limit'], ['*'], 'page', $request['offset']);
-        $orders= Helpers::order_data_formatting($paginator->items(), true);
+        $orders= Helpers::order_data_formatting($paginator->items(), true, 'store');
         $data = [
             'total_size' => $paginator->total(),
             'limit' => $request['limit'],
@@ -538,7 +538,7 @@ class VendorController extends Controller
             return response()->json($details, 200);
         } else if ($order->order_type == 'parcel' || $order->prescription_order == 1) {
             $order->delivery_address = json_decode($order->delivery_address, true);
-            Helpers::mask_order_customer_details($order);
+            Helpers::mask_order_customer_details($order, 'store');
             if($order->prescription_order && $order->order_attachment){
                 $order->order_attachment = is_array($order->order_attachment)? $order->order_attachment : json_decode($order->order_attachment, true);
             }
@@ -571,7 +571,7 @@ class VendorController extends Controller
         if(!$order){
             return response()->json(['errors'=>[['code'=>'order_id', 'message'=>trans('messages.order_data_not_found')]]],404);
         }
-        return response()->json(Helpers::order_data_formatting($order),200);
+        return response()->json(Helpers::order_data_formatting($order, false, 'store'),200);
     }
 
     public function get_all_orders(Request $request)
@@ -587,7 +587,7 @@ class VendorController extends Controller
 
         ->orderBy('schedule_at', 'desc')
         ->get();
-        $orders= Helpers::order_data_formatting($orders, true);
+        $orders= Helpers::order_data_formatting($orders, true, 'store');
         return response()->json($orders, 200);
     }
 

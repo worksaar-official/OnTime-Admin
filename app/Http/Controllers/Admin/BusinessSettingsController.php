@@ -277,16 +277,18 @@ class BusinessSettingsController extends Controller
 
         $hideCustomerFieldValues = [];
         foreach ([
-            'hide_customer_email_on_delivery',
-            'hide_customer_phone_on_delivery',
-            'hide_customer_address_on_delivery',
+            'hide_customer_email_on_delivery_dm',
+            'hide_customer_phone_on_delivery_dm',
+            'hide_customer_address_on_delivery_dm',
         ] as $hideKey) {
-            $hideCustomerFieldValues[$hideKey] = $request[$hideKey] ?? 0;
+            // UI contract: ON means visible, OFF means hidden.
+            // Stored key represents "hide", so we invert checkbox value.
+            $hideCustomerFieldValues[$hideKey] = $request->has($hideKey) ? 0 : 1;
             Helpers::businessUpdateOrInsert(['key' => $hideKey], [
                 'value' => $hideCustomerFieldValues[$hideKey],
             ]);
         }
-        Helpers::sync_hide_customer_details_on_delivery_master($hideCustomerFieldValues);
+        Helpers::sync_hide_customer_details_on_delivery_master($hideCustomerFieldValues, 'dm');
 
         Toastr::success(translate('messages.successfully_updated_to_changes_restart_app'));
         return back();
@@ -325,16 +327,18 @@ class BusinessSettingsController extends Controller
 
         $hideCustomerFieldValues = [];
         foreach ([
-            'hide_customer_email_on_delivery',
-            'hide_customer_phone_on_delivery',
-            'hide_customer_address_on_delivery',
+            'hide_customer_email_on_delivery_store',
+            'hide_customer_phone_on_delivery_store',
+            'hide_customer_address_on_delivery_store',
         ] as $hideKey) {
-            $hideCustomerFieldValues[$hideKey] = $request[$hideKey] ?? 0;
+            // UI contract: ON means visible, OFF means hidden.
+            // Stored key represents "hide", so we invert checkbox value.
+            $hideCustomerFieldValues[$hideKey] = $request->has($hideKey) ? 0 : 1;
             Helpers::businessUpdateOrInsert(['key' => $hideKey], [
                 'value' => $hideCustomerFieldValues[$hideKey],
             ]);
         }
-        Helpers::sync_hide_customer_details_on_delivery_master($hideCustomerFieldValues);
+        Helpers::sync_hide_customer_details_on_delivery_master($hideCustomerFieldValues, 'store');
 
         Helpers::businessUpdateOrInsert(['key' => 'canceled_by_store'], [
             'value' => $request['canceled_by_store'],
