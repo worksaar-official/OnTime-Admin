@@ -1043,16 +1043,6 @@ class Helpers
             $email = (int) (self::get_business_settings('hide_customer_email_on_delivery_dm') ?? 0) === 1;
             $phone = (int) (self::get_business_settings('hide_customer_phone_on_delivery_dm') ?? 0) === 1;
             $address = (int) (self::get_business_settings('hide_customer_address_on_delivery_dm') ?? 0) === 1;
-            $master = (int) (self::get_business_settings('hide_customer_details_on_delivery_dm') ?? 0) === 1;
-
-            if ($master && !$email && !$phone && !$address) {
-                return [
-                    'name' => false,
-                    'email' => true,
-                    'phone' => true,
-                    'address' => true,
-                ];
-            }
 
             return [
                 'name' => false,
@@ -1066,16 +1056,6 @@ class Helpers
             $email = (int) (self::get_business_settings('hide_customer_email_on_delivery_store') ?? 0) === 1;
             $phone = (int) (self::get_business_settings('hide_customer_phone_on_delivery_store') ?? 0) === 1;
             $address = (int) (self::get_business_settings('hide_customer_address_on_delivery_store') ?? 0) === 1;
-            $master = (int) (self::get_business_settings('hide_customer_details_on_delivery_store') ?? 0) === 1;
-
-            if ($master && !$email && !$phone && !$address) {
-                return [
-                    'name' => false,
-                    'email' => true,
-                    'phone' => true,
-                    'address' => true,
-                ];
-            }
 
             return [
                 'name' => false,
