@@ -283,7 +283,7 @@ class BusinessSettingsController extends Controller
         ] as $hideKey) {
             // UI contract: ON means visible, OFF means hidden.
             // Stored key represents "hide", so we invert checkbox value.
-            $hideCustomerFieldValues[$hideKey] = $request->has($hideKey) ? 0 : 1;
+            $hideCustomerFieldValues[$hideKey] = ((int) $request->input($hideKey, 0) === 1) ? 0 : 1;
             Helpers::businessUpdateOrInsert(['key' => $hideKey], [
                 'value' => $hideCustomerFieldValues[$hideKey],
             ]);
@@ -333,7 +333,7 @@ class BusinessSettingsController extends Controller
         ] as $hideKey) {
             // UI contract: ON means visible, OFF means hidden.
             // Stored key represents "hide", so we invert checkbox value.
-            $hideCustomerFieldValues[$hideKey] = $request->has($hideKey) ? 0 : 1;
+            $hideCustomerFieldValues[$hideKey] = ((int) $request->input($hideKey, 0) === 1) ? 0 : 1;
             Helpers::businessUpdateOrInsert(['key' => $hideKey], [
                 'value' => $hideCustomerFieldValues[$hideKey],
             ]);

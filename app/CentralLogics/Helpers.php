@@ -4388,6 +4388,10 @@ class Helpers
         $businessSetting = BusinessSetting::firstOrNew(['key' => $key['key']]);
         $businessSetting->value = $value['value'];
         $businessSetting->save();
+
+        // Keep business-setting reads consistent right after save.
+        Cache::forget('business_settings_all_data');
+        Config::offsetUnset($key['key'].'_conf');
     }
 
     public static function businessInsert($data)
@@ -4395,6 +4399,9 @@ class Helpers
         $businessSetting = BusinessSetting::firstOrNew(['key' => $data['key']]);
         $businessSetting->value = $data['value'];
         $businessSetting->save();
+
+        Cache::forget('business_settings_all_data');
+        Config::offsetUnset($data['key'].'_conf');
     }
 
     public static function dataUpdateOrInsert($key, $value)
