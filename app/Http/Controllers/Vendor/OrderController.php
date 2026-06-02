@@ -102,6 +102,10 @@ class OrderController extends Controller
         ->where('store_id',\App\CentralLogics\Helpers::get_store_id())
         ->orderBy('schedule_at', 'desc')
         ->paginate(config('default_pagination'));
+        $orders->getCollection()->transform(function ($order) {
+            Helpers::mask_order_customer_details($order, 'store');
+            return $order;
+        });
         $status = $status;
         return view('vendor-views.order.list', compact('orders', 'status'));
     }
@@ -185,6 +189,10 @@ class OrderController extends Controller
         ->where('store_id',\App\CentralLogics\Helpers::get_store_id())
         ->orderBy('schedule_at', 'desc')
         ->get();
+        $orders = $orders->map(function ($order) {
+            Helpers::mask_order_customer_details($order, 'store');
+            return $order;
+        });
 
         $data = [
             'orders'=>$orders,
@@ -216,6 +224,7 @@ class OrderController extends Controller
             return $query->withCount('orders');
         }])->where(['id' => $id, 'store_id' => Helpers::get_store_id()])->first();
         if (isset($order)) {
+            Helpers::mask_order_customer_details($order, 'store');
             $reasons=OrderCancelReason::where('status', 1)->where('user_type' ,'store' )->get();
             return view('vendor-views.order.order-view', compact('order' ,'reasons'));
         } else {
