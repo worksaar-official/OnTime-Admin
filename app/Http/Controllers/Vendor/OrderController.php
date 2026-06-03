@@ -310,7 +310,7 @@ class OrderController extends Controller
                 if($unpaid_payment){
                     $unpaid_pay_method = $unpaid_payment;
                 }
-                if($order->payment_method == 'cash_on_delivery' || $unpaid_pay_method == 'cash_on_delivery')
+                if($order->payment_status != 'paid' && ($order->payment_method == 'cash_on_delivery' || $unpaid_pay_method == 'cash_on_delivery'))
                 {
                     $ol = OrderLogic::create_transaction($order,'store', null);
                 }

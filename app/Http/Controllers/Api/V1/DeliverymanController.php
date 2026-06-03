@@ -641,7 +641,7 @@ class DeliverymanController extends Controller
                 if ($unpaid_payment && $unpaid_payment->payment_method == 'cash_on_delivery') {
                     $pay_method = 'cash_on_delivery';
                 }
-                $reveived_by = ($order->payment_method == 'cash_on_delivery' || $pay_method == 'cash_on_delivery') ? ($dm->type != 'zone_wise' ? 'store' : 'deliveryman') : 'admin';
+                $reveived_by = ($order->payment_status != 'paid' && ($order->payment_method == 'cash_on_delivery' || $pay_method == 'cash_on_delivery')) ? ($dm->type != 'zone_wise' ? 'store' : 'deliveryman') : 'admin';
 
                 if (OrderLogic::create_transaction($order, $reveived_by, null)) {
                     $order->payment_status = 'paid';
