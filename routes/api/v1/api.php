@@ -165,8 +165,11 @@ Route::group(['namespace' => 'Api\V1', 'middleware'=>'localization'], function (
         Route::put('update-profile', 'VendorController@update_profile');
         Route::put('update-announcment', 'VendorController@update_announcment');
         Route::get('current-orders', 'VendorController@get_current_orders');
+        Route::get('running-orders-count', 'VendorController@get_running_orders_count');
         Route::get('completed-orders', 'VendorController@get_completed_orders');
         Route::get('canceled-orders', 'VendorController@get_canceled_orders');
+        Route::get('refund-requested-orders', 'VendorController@get_refund_requested_orders');
+        Route::get('refund-request-canceled-orders', 'VendorController@get_refund_request_canceled_orders');
         Route::get('all-orders', 'VendorController@get_all_orders');
         Route::put('update-order-status', 'VendorController@update_order_status');
         Route::put('update-order-amount', 'VendorController@edit_order_amount');

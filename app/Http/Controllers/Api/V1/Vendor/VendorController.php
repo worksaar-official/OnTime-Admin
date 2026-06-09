@@ -248,41 +248,116 @@ class VendorController extends Controller
         return response()->json(['message' => translate('messages.profile_updated_successfully')], 200);
     }
 
+    private function runningOrderStatuses(): array
+    {
+        return [
+            'accepted',
+            'pending',
+            'confirmed',
+            'processing',
+            'handover',
+            'picked_up',
+            'refund_requested',
+            'refund_request_canceled',
+            'canceled',
+        ];
+    }
+
+    private function applyRunningOrdersQuery($query, $vendor)
+    {
+        return $query->where(function ($statusQuery) use ($vendor) {
+            if (config('order_confirmation_model') == 'store' || $vendor->stores[0]->sub_self_delivery) {
+                $statusQuery->whereIn('order_status', $this->runningOrderStatuses());
+            } else {
+                $statusQuery->whereIn('order_status', ['confirmed', 'processing', 'handover', 'picked_up', 'refund_requested', 'refund_request_canceled', 'canceled'])
+                    ->orWhere(function ($acceptedQuery) {
+                        $acceptedQuery->whereNotNull('confirmed')->where('order_status', 'accepted');
+                    })
+                    ->orWhere(function ($paidAcceptedQuery) {
+                        $paidAcceptedQuery->where('payment_status', 'paid')->where('order_status', 'accepted');
+                    })
+                    ->orWhere(function ($takeAwayQuery) {
+                        $takeAwayQuery->where('order_status', 'pending')->where('order_type', 'take_away');
+                    });
+            }
+        });
+    }
+
     public function get_current_orders(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'status' => 'nullable|in:pending,accepted,confirmed,processing,handover,picked_up,refund_requested,refund_request_canceled,canceled',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
+        }
+
+        $vendor = $request['vendor'];
+
+        $orders = Order::whereHas('store.vendor', function ($query) use ($vendor) {
+            $query->where('id', $vendor->id);
+        })
+            ->with('customer')
+            ->when(true, function ($query) use ($vendor) {
+                return $this->applyRunningOrdersQuery($query, $vendor);
+            })
+            ->when($request->filled('status'), function ($query) use ($request) {
+                return $query->where('order_status', $request->status);
+            })
+            ->Notpos()
+            ->NotDigitalOrder()
+            ->orderBy('schedule_at', 'desc')
+            ->get();
+
+        $orders = Helpers::order_data_formatting($orders, true, 'store');
+        return response()->json($orders, 200);
+    }
+
+    public function get_running_orders_count(Request $request)
     {
         $vendor = $request['vendor'];
 
-        $orders = Order::whereHas('store.vendor', function($query) use($vendor){
+        $counts = Order::whereHas('store.vendor', function ($query) use ($vendor) {
             $query->where('id', $vendor->id);
         })
-        ->with('customer')
+            ->when(true, function ($query) use ($vendor) {
+                return $this->applyRunningOrdersQuery($query, $vendor);
+            })
+            ->Notpos()
+            ->NotDigitalOrder()
+            ->selectRaw('order_status, COUNT(*) as total')
+            ->groupBy('order_status')
+            ->pluck('total', 'order_status');
 
-        ->where(function($query)use($vendor){
-            if(config('order_confirmation_model') == 'store' || $vendor->stores[0]->sub_self_delivery)
-            {
-                $query->whereIn('order_status', ['accepted','pending','confirmed', 'processing', 'handover','picked_up']);
-            }
-            else
-            {
-                $query->whereIn('order_status', ['confirmed', 'processing', 'handover','picked_up'])
-                ->orWhere(function($query){
-                    $query->whereNotNull('confirmed')->where('order_status', 'accepted');
-                })
-                ->orWhere(function($query){
-                    $query->where('payment_status','paid')->where('order_status', 'accepted');
-                })
-                ->orWhere(function($query){
-                    $query->where('order_status','pending')->where('order_type', 'take_away');
-                });
-            }
-        })
-        ->Notpos()
-        ->NotDigitalOrder()
+        $statusKeys = [
+            'pending',
+            'confirmed',
+            'processing',
+            'handover',
+            'picked_up',
+            'refund_requested',
+            'refund_request_canceled',
+            'canceled',
+        ];
 
-        ->orderBy('schedule_at', 'desc')
-        ->get();
-        $orders= Helpers::order_data_formatting($orders, true, 'store');
-        return response()->json($orders, 200);
+        $response = [];
+        foreach ($statusKeys as $status) {
+            $response[] = [
+                'key' => $status,
+                'count' => (int) ($counts[$status] ?? 0),
+            ];
+        }
+
+        $acceptedCount = (int) ($counts['accepted'] ?? 0);
+        if ($acceptedCount > 0) {
+            $response[] = [
+                'key' => 'accepted',
+                'count' => $acceptedCount,
+            ];
+        }
+
+        return response()->json($response, 200);
     }
 
     public function get_completed_orders(Request $request)
@@ -322,7 +397,7 @@ class VendorController extends Controller
         return response()->json($data, 200);
     }
 
-    public function get_canceled_orders(Request $request)
+    private function getPaginatedOrdersByStatus(Request $request, string $orderStatus)
     {
         $validator = Validator::make($request->all(), [
             'limit' => 'required',
@@ -335,22 +410,40 @@ class VendorController extends Controller
 
         $vendor = $request['vendor'];
 
-        $paginator = Order::whereHas('store.vendor', function($query) use($vendor){
+        $paginator = Order::whereHas('store.vendor', function ($query) use ($vendor) {
             $query->where('id', $vendor->id);
         })
-        ->with('customer')
-        ->where('order_status', 'canceled')
-        ->Notpos()
-        ->latest()
-        ->paginate($request['limit'], ['*'], 'page', $request['offset']);
-        $orders= Helpers::order_data_formatting($paginator->items(), true, 'store');
+            ->with('customer')
+            ->where('order_status', $orderStatus)
+            ->Notpos()
+            ->NotDigitalOrder()
+            ->latest()
+            ->paginate($request['limit'], ['*'], 'page', $request['offset']);
+
+        $orders = Helpers::order_data_formatting($paginator->items(), true, 'store');
         $data = [
             'total_size' => $paginator->total(),
             'limit' => $request['limit'],
             'offset' => $request['offset'],
-            'orders' => $orders
+            'orders' => $orders,
         ];
+
         return response()->json($data, 200);
+    }
+
+    public function get_canceled_orders(Request $request)
+    {
+        return $this->getPaginatedOrdersByStatus($request, 'canceled');
+    }
+
+    public function get_refund_requested_orders(Request $request)
+    {
+        return $this->getPaginatedOrdersByStatus($request, 'refund_requested');
+    }
+
+    public function get_refund_request_canceled_orders(Request $request)
+    {
+        return $this->getPaginatedOrdersByStatus($request, 'refund_request_canceled');
     }
 
     public function update_order_status(Request $request)
