@@ -2004,6 +2004,51 @@ class Helpers
                     'title' => translate('Order_Notification'),
                     'description' => $order->id . ' ' . translate('order_is_picked_up'),
                     'order_id' => $order->id,
+                    'order_status' => 'picked_up',
+                    'image' => '',
+                    'type' => 'order_status',
+                ];
+                if ($order->store && $order->store->vendor && $push_notification_status) {
+                    self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
+                    DB::table('user_notifications')->insert([
+                        'data' => json_encode($data),
+                        'vendor_id' => $order->store->vendor_id,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                    self::sendStoreEmployeeNotification($order, $data);
+                }
+            }
+
+            if ($order->order_status == 'delivered') {
+                $data = [
+                    'title' => translate('Order_Notification'),
+                    'description' => $order->id . ' ' . translate('order_is_delivered'),
+                    'order_id' => $order->id,
+                    'order_status' => 'delivered',
+                    'image' => '',
+                    'type' => 'order_status',
+                ];
+                if ($order->store && $order->store->vendor && $push_notification_status) {
+                    self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
+                    DB::table('user_notifications')->insert([
+                        'data' => json_encode($data),
+                        'vendor_id' => $order->store->vendor_id,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                    self::sendStoreEmployeeNotification($order, $data);
+                }
+            }
+
+            if ($order->order_status == 'canceled') {
+                $data = [
+                    'title' => translate('Order_Notification'),
+                    'description' => $order->id . ' ' . translate('order_is_canceled'),
+                    'order_id' => $order->id,
+                    'order_status' => 'canceled',
                     'image' => '',
                     'type' => 'order_status',
                 ];
