@@ -17,14 +17,9 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.CPANEL_ONTIME_CITY_MAIN_SSH_KEY }}
 
-      - name: Add Host
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.CPANEL_ONTIME_CITY_MAIN_HOST }} >> ~/.ssh/known_hosts
-
       - name: Deploy
         run: |
-          ssh ${{ secrets.CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
             cd /home/ontime-cpanel/htdocs/cpanel.ontime.city
 
             git fetch origin
