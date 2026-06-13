@@ -19,7 +19,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -v -o StrictHostKeyChecking=no -o PubkeyAcceptedKeyTypes=+ssh-rsa ${{ secrets.CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no ${{ secrets.CPANEL_ONTIME_CITY_MAIN_USER }}@${{ secrets.CPANEL_ONTIME_CITY_MAIN_HOST }} << 'EOF'
             cd /home/ontime-cpanel/htdocs/cpanel.ontime.city
 
             git fetch origin
