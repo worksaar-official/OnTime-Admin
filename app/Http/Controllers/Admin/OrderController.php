@@ -342,6 +342,8 @@ class OrderController extends Controller
                 $order?->payments()->where('payment_status','unpaid')->update([
                     'payment_method'=> 'cash_on_delivery',
                 ]);
+            } else {
+                $order->payment_method = 'cash_on_delivery';
             }
 
             if($order?->store?->is_valid_subscription == 1 && $order?->store?->store_sub?->max_order != "unlimited" &&
@@ -355,7 +357,6 @@ class OrderController extends Controller
                 $order->order_status = 'pending';
             }
 
-            $order->payment_method = 'cash_on_delivery';
             $order->save();
 
             if($order?->is_guest == 0){
@@ -498,7 +499,7 @@ class OrderController extends Controller
                 if($unpaid_payment){
                     $unpaid_pay_method = $unpaid_payment;
                 }
-                if ($order->payment_method == "cash_on_delivery" || $unpaid_pay_method == 'cash_on_delivery') {
+                if ($order->payment_status != 'paid' && ($order->payment_method == "cash_on_delivery" || $unpaid_pay_method == 'cash_on_delivery')) {
                     if ($order->order_type == 'take_away') {
                         $ol = OrderLogic::create_transaction($order, 'store', null);
                     } else if ($order->delivery_man_id) {

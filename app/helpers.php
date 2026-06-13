@@ -37,7 +37,12 @@ if (! function_exists('translate')) {
                 file_put_contents(base_path('resources/lang/' . $local . '/messages.php'), $str);
                 $result = $processed_key;
             } else {
-                $result = trans('messages.' . $key, $replace);
+                $result = $lang_array[$key];
+                if (is_string($result) && count($replace) > 0) {
+                    foreach ($replace as $search => $value) {
+                        $result = str_replace(':' . $search, $value, $result);
+                    }
+                }
             }
         } catch (\Exception $exception) {
             info($exception->getMessage());

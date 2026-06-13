@@ -20,9 +20,12 @@ jobs:
           ssh-private-key: ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_SSH_KEY }}
 
       - name: Add host
+        shell: bash
         run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }} >> ~/.ssh/known_hosts
+          install -d -m 700 "$HOME/.ssh"
+          touch "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+          ssh-keyscan -H "${{ secrets.DEV_CPANEL_ONTIME_CITY_MAIN_HOST }}" >> "$HOME/.ssh/known_hosts"
 
       - name: SSH deploy
         run: |
@@ -40,4 +43,9 @@ jobs:
 
             # Install/update dependencies
             composer install --no-dev --optimize-autoloader
+
+            # Clear caches so Blade/config changes are visible immediately
+            php artisan view:clear
+            php artisan config:clear
+            php artisan cache:clear
           EOF

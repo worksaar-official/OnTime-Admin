@@ -239,6 +239,7 @@ class ZoneController extends BaseController
             foreach ($request->module_id as $moduleId) {
                 $data = $request->module_data[$moduleId] ?? [];
                 $data['tier_wise_delivery_charge'] = isset($data['tier_wise_delivery_charge']) ? 1 : 0;
+                $data['extra_vehicle_charge_toggle'] = isset($data['extra_vehicle_charge_toggle']) ? 1 : 0;
                 $filteredModuleData[$moduleId] = $data;
             }
         }

@@ -102,6 +102,10 @@ class OrderController extends Controller
         ->where('store_id',\App\CentralLogics\Helpers::get_store_id())
         ->orderBy('schedule_at', 'desc')
         ->paginate(config('default_pagination'));
+        $orders->getCollection()->transform(function ($order) {
+            Helpers::mask_order_customer_details($order, 'store');
+            return $order;
+        });
         $status = $status;
         return view('vendor-views.order.list', compact('orders', 'status'));
     }
@@ -185,6 +189,10 @@ class OrderController extends Controller
         ->where('store_id',\App\CentralLogics\Helpers::get_store_id())
         ->orderBy('schedule_at', 'desc')
         ->get();
+        $orders = $orders->map(function ($order) {
+            Helpers::mask_order_customer_details($order, 'store');
+            return $order;
+        });
 
         $data = [
             'orders'=>$orders,
@@ -216,6 +224,11 @@ class OrderController extends Controller
             return $query->withCount('orders');
         }])->where(['id' => $id, 'store_id' => Helpers::get_store_id()])->first();
         if (isset($order)) {
+            if (!$order->store || !$order->store->module) {
+                Toastr::error(translate('messages.store_data_not_found_for_this_order'));
+                return redirect()->route('vendor.order.list', ['status' => 'all']);
+            }
+            Helpers::mask_order_customer_details($order, 'store');
             $reasons=OrderCancelReason::where('status', 1)->where('user_type' ,'store' )->get();
             return view('vendor-views.order.order-view', compact('order' ,'reasons'));
         } else {
@@ -297,7 +310,7 @@ class OrderController extends Controller
                 if($unpaid_payment){
                     $unpaid_pay_method = $unpaid_payment;
                 }
-                if($order->payment_method == 'cash_on_delivery' || $unpaid_pay_method == 'cash_on_delivery')
+                if($order->payment_status != 'paid' && ($order->payment_method == 'cash_on_delivery' || $unpaid_pay_method == 'cash_on_delivery'))
                 {
                     $ol = OrderLogic::create_transaction($order,'store', null);
                 }

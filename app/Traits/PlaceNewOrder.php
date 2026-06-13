@@ -902,10 +902,10 @@ trait PlaceNewOrder
                 $increased = 0;
             } elseif ($module_wise_delivery_charge) {
                 if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') {
-                    $extra_charges = 0;
                     $distance = $request->distance ?? 0;
                     $tiers = $module_wise_delivery_charge->pivot->tiered_delivery_charge ?? [];
                     $tier_wise = $module_wise_delivery_charge->pivot->tier_wise_delivery_charge ?? 0;
+                    
                     if ($tier_wise == 1) {
                         // TIER-WISE (Incremental Accumulation)
                         $temp_charge = 0;
@@ -930,15 +930,24 @@ trait PlaceNewOrder
                         $temp_charge = $distance * $matching_tier_rate;
                     }
 
+                    // Extra Charge logic for Tier Wise
+                    if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1) {
+                        if ($temp_charge <= 0) {
+                            $extra_charges = 0;
+                        }
+                    } else {
+                        $extra_charges = 0;
+                    }
+
                     $per_km_shipping_charge = $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0;
+                    $minimum_shipping_charge = $module_wise_delivery_charge->pivot->minimum_shipping_charge ?? 0;
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
 
-                    $delivery_charge = max($temp_charge, $distance * $per_km_shipping_charge);
+                    $delivery_charge = max($temp_charge, $minimum_shipping_charge);
                     $original_delivery_charge = $delivery_charge + $extra_charges;
 
                     $free_delivery_by = null;
                     if ($temp_charge == 0 && $distance > 0) {
-
                         $delivery_charge = 0;
                         $free_delivery_by = 'admin';
                     } else {
@@ -950,7 +959,7 @@ trait PlaceNewOrder
                     }
 
                     return [
-                        'vehicle_id' => null,
+                        'vehicle_id' => $vehicle_id,
                         'original_delivery_charge' => $original_delivery_charge,
                         'delivery_charge' => $delivery_charge,
                         'free_delivery_by' => $free_delivery_by,
@@ -959,6 +968,20 @@ trait PlaceNewOrder
                     $per_km_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->per_km_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
                     $minimum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->minimum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance' ? $module_wise_delivery_charge->pivot->maximum_shipping_charge : $module_wise_delivery_charge->pivot->fixed_shipping_charge;
+
+                    info('--- Delivery Charge Debug Start ---');
+                    info('extra_vehicle_charge_toggle: ' . ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle ?? '0'));
+                    info('delivery_charge_type: ' . ($module_wise_delivery_charge->pivot->delivery_charge_type ?? 'null'));
+
+                    if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1 && $module_wise_delivery_charge->pivot->delivery_charge_type == 'distance') {
+                        // Extra charges will be added at the end for Distance Wise
+                    } else {
+                        // This else now only handles Distance type with toggle OFF, 
+                        // Tier type is already handled and returned above.
+                        if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'distance') {
+                            $extra_charges = 0;
+                        }
+                    }
                 }
             } else {
                 return [
@@ -968,17 +991,17 @@ trait PlaceNewOrder
                 ];
             }
 
-            if (! isset($delivery_charge)) {
-                $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
-                if ($maximum_shipping_charge >= $minimum_shipping_charge && $original_delivery_charge > $maximum_shipping_charge) {
-                    $original_delivery_charge = $maximum_shipping_charge;
-                }
+            $original_delivery_charge = (($request->distance * $per_km_shipping_charge) > $minimum_shipping_charge) ? $request->distance * $per_km_shipping_charge : $minimum_shipping_charge;
+            if ($maximum_shipping_charge >= $minimum_shipping_charge && $original_delivery_charge > $maximum_shipping_charge) {
+                $original_delivery_charge = $maximum_shipping_charge;
+            }
 
+            if (! isset($delivery_charge)) {
                 $delivery_charge = $original_delivery_charge;
             }
 
-            $original_delivery_charge = $original_delivery_charge + $extra_charges;
-            $delivery_charge = $delivery_charge + $extra_charges;
+            $original_delivery_charge += $extra_charges;
+            $delivery_charge += $extra_charges;
         } else {
             $parcel_category = ParcelCategory::find($request->parcel_category_id);
             if ($parcel_category?->parcel_minimum_shipping_charge) {

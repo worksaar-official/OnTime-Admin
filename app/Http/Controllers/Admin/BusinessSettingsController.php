@@ -275,6 +275,21 @@ class BusinessSettingsController extends Controller
             ]);
         }
 
+        $hideCustomerFieldValues = [];
+        foreach ([
+            'hide_customer_email_on_delivery_dm',
+            'hide_customer_phone_on_delivery_dm',
+            'hide_customer_address_on_delivery_dm',
+        ] as $hideKey) {
+            // UI contract: ON means visible, OFF means hidden.
+            // Stored key represents "hide", so we invert checkbox value.
+            $hideCustomerFieldValues[$hideKey] = ((int) $request->input($hideKey, 0) === 1) ? 0 : 1;
+            Helpers::businessUpdateOrInsert(['key' => $hideKey], [
+                'value' => $hideCustomerFieldValues[$hideKey],
+            ]);
+        }
+        Helpers::sync_hide_customer_details_on_delivery_master($hideCustomerFieldValues, 'dm');
+
         Toastr::success(translate('messages.successfully_updated_to_changes_restart_app'));
         return back();
     }
@@ -309,6 +324,21 @@ class BusinessSettingsController extends Controller
         Helpers::businessUpdateOrInsert(['key' => 'store_review_reply'], [
             'value' => $request['store_review_reply'],
         ]);
+
+        $hideCustomerFieldValues = [];
+        foreach ([
+            'hide_customer_email_on_delivery_store',
+            'hide_customer_phone_on_delivery_store',
+            'hide_customer_address_on_delivery_store',
+        ] as $hideKey) {
+            // UI contract: ON means visible, OFF means hidden.
+            // Stored key represents "hide", so we invert checkbox value.
+            $hideCustomerFieldValues[$hideKey] = ((int) $request->input($hideKey, 0) === 1) ? 0 : 1;
+            Helpers::businessUpdateOrInsert(['key' => $hideKey], [
+                'value' => $hideCustomerFieldValues[$hideKey],
+            ]);
+        }
+        Helpers::sync_hide_customer_details_on_delivery_master($hideCustomerFieldValues, 'store');
 
         Helpers::businessUpdateOrInsert(['key' => 'canceled_by_store'], [
             'value' => $request['canceled_by_store'],

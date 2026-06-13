@@ -469,6 +469,8 @@
                         </div>
                     </div>
 
+                    @include('admin-views.business-settings.partials.hide-customer-details-on-delivery-card', ['idSuffix' => 'store'])
+
                     @includeIf('admin-views.partials._floating-submit-button')
                 </div>
             </div>
@@ -674,6 +676,7 @@
                     $('#inlineCheckbox4').prop('checked', false);
                 }
             });
+
         });
     </script>
 @endpush

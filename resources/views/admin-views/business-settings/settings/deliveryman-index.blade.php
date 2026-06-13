@@ -279,6 +279,7 @@
                             </div>
                         </div>
                     </div>
+                    @include('admin-views.business-settings.partials.hide-customer-details-on-delivery-card', ['idSuffix' => 'dm'])
                     <div class="card" id="cash_in_hand_section">
                         <div class="card-body">
                             <div class="mb-20">

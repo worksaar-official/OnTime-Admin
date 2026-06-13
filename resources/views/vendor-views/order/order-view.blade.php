@@ -953,7 +953,7 @@
 
 
                             @if ($order->delivery_address)
-                                @php($address = json_decode($order->delivery_address, true))
+                                @php($address = is_array($order->delivery_address) ? $order->delivery_address : json_decode($order->delivery_address, true))
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h5>{{ translate('messages.delivery_info') }}</h5>
                                 </div>
@@ -1006,7 +1006,7 @@
                                 {{ translate('Guest_user') }}
                             </span>
                             @if ($order->delivery_address)
-                            @php($address = json_decode($order->delivery_address, true))
+                            @php($address = is_array($order->delivery_address) ? $order->delivery_address : json_decode($order->delivery_address, true))
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5>{{ translate('messages.delivery_info') }}</h5>
                             </div>
@@ -1105,7 +1105,7 @@
                                                     alt="order image">
 
                                                 <div class="pen spartan_remove_row"><i class="tio-edit"></i></div>
-                                                <a href="{{ route('vendor.order.remove-proof-image', ['id' => $order['id'], 'name' => $photo]) }}"
+                                                <a href="{{ route('vendor.order.remove-proof-image', ['id' => $order['id'], 'name' => is_array($photo) ? ($photo['img'] ?? '') : $photo]) }}"
                                                     class="spartan_remove_row"><i class="tio-add-to-trash"></i></a>
                                             </div>
                                         @endforeach

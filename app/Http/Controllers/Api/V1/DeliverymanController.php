@@ -250,7 +250,7 @@ class DeliverymanController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->paginate($request->limit, ['*'], 'page', $request->offset);
 
-        $orders = Helpers::order_data_formatting($paginator->items(), true);
+        $orders = Helpers::order_data_formatting($paginator->items(), true, 'deliveryman');
         $data = [
             'total_size' => $paginator->total(),
             'limit' => $request['limit'],
@@ -367,7 +367,7 @@ class DeliverymanController extends Controller
             ->whereNull('delivery_man_id')
             ->orderBy('schedule_at', 'desc')
             ->get();
-        $orders = Helpers::order_data_formatting($orders, true);
+        $orders = Helpers::order_data_formatting($orders, true, 'deliveryman');
 
         return response()->json($orders, 200);
     }
@@ -641,7 +641,7 @@ class DeliverymanController extends Controller
                 if ($unpaid_payment && $unpaid_payment->payment_method == 'cash_on_delivery') {
                     $pay_method = 'cash_on_delivery';
                 }
-                $reveived_by = ($order->payment_method == 'cash_on_delivery' || $pay_method == 'cash_on_delivery') ? ($dm->type != 'zone_wise' ? 'store' : 'deliveryman') : 'admin';
+                $reveived_by = ($order->payment_status != 'paid' && ($order->payment_method == 'cash_on_delivery' || $pay_method == 'cash_on_delivery')) ? ($dm->type != 'zone_wise' ? 'store' : 'deliveryman') : 'admin';
 
                 if (OrderLogic::create_transaction($order, $reveived_by, null)) {
                     $order->payment_status = 'paid';
@@ -748,6 +748,7 @@ class DeliverymanController extends Controller
             return response()->json($details, 200);
         } elseif ($order->order_type == 'parcel') {
             $order->delivery_address = $order->delivery_address ? json_decode($order->delivery_address, true) : [];
+            Helpers::mask_order_customer_details($order, 'deliveryman');
 
             return response()->json(($order), 200);
         } elseif ($order->prescription_order == 1) {
@@ -780,7 +781,7 @@ class DeliverymanController extends Controller
             ], 204);
         }
 
-        return response()->json(Helpers::order_data_formatting($order), 200);
+        return response()->json(Helpers::order_data_formatting($order, false, 'deliveryman'), 200);
     }
 
     public function get_all_orders(Request $request)
@@ -823,7 +824,7 @@ class DeliverymanController extends Controller
             ->orderBy('schedule_at', 'desc')
             ->paginate($request->limit, ['*'], 'page', $request->offset);
 
-        $orders = Helpers::order_data_formatting($paginator->items(), true);
+        $orders = Helpers::order_data_formatting($paginator->items(), true, 'deliveryman');
         $data = [
             'total_size' => $paginator->total(),
             'limit' => $request['limit'],

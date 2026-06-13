@@ -22,5 +22,6 @@ class ModuleZone extends Pivot
         'fixed_shipping_charge'=>'float',
         'tier_wise_delivery_charge' => 'boolean',
         'tiered_delivery_charge' => 'array',
+        'extra_vehicle_charge_toggle' => 'integer',
     ];
 }
