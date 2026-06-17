@@ -938,13 +938,9 @@ trait PlaceNewOrder
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1) {
                         if ($temp_charge <= 0) {
                             $customer_extra_charges = 0;
-                            $rider_extra_charges = 0;
                         }
                     } else {
                         $customer_extra_charges = 0;
-                        if ($temp_charge <= 0) {
-                            $rider_extra_charges = 0;
-                        }
                     }
 
                     $per_km_shipping_charge = $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0;
@@ -952,7 +948,7 @@ trait PlaceNewOrder
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
 
                     $delivery_charge = max($temp_charge, $minimum_shipping_charge);
-                    $original_delivery_charge = $delivery_charge + $rider_extra_charges;
+                    $original_delivery_charge = ($distance * $per_km_shipping_charge) + $rider_extra_charges;
 
                     $free_delivery_by = null;
                     if ($temp_charge == 0 && $distance > 0) {
