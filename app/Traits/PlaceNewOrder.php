@@ -883,6 +883,9 @@ trait PlaceNewOrder
         $extra_charges = $vehicleExtraCharge['extraCharge'];
         $vehicle_id = $vehicleExtraCharge['vehicle_id'];
 
+        $customer_extra_charges = $extra_charges;
+        $rider_extra_charges = $extra_charges;
+
         if ($request->order_type !== 'parcel') {
 
             if ($request['order_type'] === 'take_away') {
@@ -897,7 +900,8 @@ trait PlaceNewOrder
                 $per_km_shipping_charge = $store->per_km_shipping_charge;
                 $minimum_shipping_charge = $store->minimum_shipping_charge;
                 $maximum_shipping_charge = $store->maximum_shipping_charge;
-                $extra_charges = 0;
+                $customer_extra_charges = 0;
+                $rider_extra_charges = 0;
                 $vehicle_id = null;
                 $increased = 0;
             } elseif ($module_wise_delivery_charge) {
@@ -933,10 +937,10 @@ trait PlaceNewOrder
                     // Extra Charge logic for Tier Wise
                     if ($module_wise_delivery_charge->pivot->extra_vehicle_charge_toggle == 1) {
                         if ($temp_charge <= 0) {
-                            $extra_charges = 0;
+                            $customer_extra_charges = 0;
                         }
                     } else {
-                        $extra_charges = 0;
+                        $customer_extra_charges = 0;
                     }
 
                     $per_km_shipping_charge = $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0;
@@ -944,14 +948,14 @@ trait PlaceNewOrder
                     $maximum_shipping_charge = $module_wise_delivery_charge->pivot->maximum_shipping_charge ?? 0;
 
                     $delivery_charge = max($temp_charge, $minimum_shipping_charge);
-                    $original_delivery_charge = $delivery_charge + $extra_charges;
+                    $original_delivery_charge = ($distance * $per_km_shipping_charge) + $rider_extra_charges;
 
                     $free_delivery_by = null;
                     if ($temp_charge == 0 && $distance > 0) {
                         $delivery_charge = 0;
                         $free_delivery_by = 'admin';
                     } else {
-                        $delivery_charge = $original_delivery_charge;
+                        $delivery_charge = $delivery_charge + $customer_extra_charges;
                     }
 
                     if ($maximum_shipping_charge > 0 && $delivery_charge > $maximum_shipping_charge) {
@@ -979,7 +983,7 @@ trait PlaceNewOrder
                         // This else now only handles Distance type with toggle OFF, 
                         // Tier type is already handled and returned above.
                         if ($module_wise_delivery_charge->pivot->delivery_charge_type == 'distance') {
-                            $extra_charges = 0;
+                            $customer_extra_charges = 0;
                         }
                     }
                 }
@@ -1000,8 +1004,8 @@ trait PlaceNewOrder
                 $delivery_charge = $original_delivery_charge;
             }
 
-            $original_delivery_charge += $extra_charges;
-            $delivery_charge += $extra_charges;
+            $original_delivery_charge += $rider_extra_charges;
+            $delivery_charge += $customer_extra_charges;
         } else {
             $parcel_category = ParcelCategory::find($request->parcel_category_id);
             if ($parcel_category?->parcel_minimum_shipping_charge) {

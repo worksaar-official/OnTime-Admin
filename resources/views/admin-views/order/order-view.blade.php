@@ -117,6 +117,12 @@
                                             {{ translate('messages.show_locations_on_map') }}</button>
                                     </h5>
                                 </div>
+                                @if(isset($order->distance))
+                                    <h6 class="text-capitalize mt-2 pt-1 mb-2 fw-medium d-flex align-items-center __gap-5px">
+                                        <span>{{ translate('messages.distance') }}</span> <span>:</span>
+                                        <span class="badge text-body bg-light2 py-1 px-2 font-weight-normal">{{ $order->distance }} {{ translate('messages.km') }}</span>
+                                    </h6>
+                                @endif
                                 @if($order['cancellation_reason'])
                                     <h6 class="text-capitalize my-2 ml-2">
                                         <span class="text-danger">{{ translate('messages.Cancelled_By') }} :</span>

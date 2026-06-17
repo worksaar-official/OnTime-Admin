@@ -661,6 +661,7 @@ class POSController extends Controller
         }
 
         $extra_charges = 0;
+        $rider_extra_charges = 0;
         $vehicle_id = null;
 
         $module_wise_delivery_charge = $store->zone ? $store->zone->modules()->where('modules.id', $store->module_id)->first() : null;
@@ -677,6 +678,7 @@ class POSController extends Controller
                 ->orderBy('starting_coverage_area')->first();
 
             $extra_charges = (float) (isset($data) ? $data->extra_charges  : 0);
+            $rider_extra_charges = $extra_charges;
             $vehicle_id = (isset($data) ? $data->id  : null);
 
             if ($module_wise_delivery_charge) {
@@ -710,8 +712,16 @@ class POSController extends Controller
         $order->module_id = $store->module_id;
         $order->user_id = $request->user_id;
         $order->dm_vehicle_id = $vehicle_id;
-        $order->delivery_charge = isset($address)?$address['delivery_fee']+$extra_charges:0;
-        $order->original_delivery_charge = isset($address)?$address['delivery_fee']+$extra_charges:0;
+        $delivery_fee = isset($address) ? $address['delivery_fee'] : 0;
+        $rider_fee = $delivery_fee;
+
+        if ($module_wise_delivery_charge && $module_wise_delivery_charge->pivot->delivery_charge_type == 'tier') {
+            $per_km_shipping_charge = $module_wise_delivery_charge->pivot->per_km_shipping_charge ?? 0;
+            $rider_fee = $distance_data * $per_km_shipping_charge;
+        }
+
+        $order->delivery_charge = isset($address) ? $delivery_fee + $extra_charges : 0;
+        $order->original_delivery_charge = isset($address) ? $rider_fee + $rider_extra_charges : 0;
         $order->delivery_address = isset($address)?json_encode($address):null;
         $order->checked = 1;
         $order->zone_id = $store->zone_id;
