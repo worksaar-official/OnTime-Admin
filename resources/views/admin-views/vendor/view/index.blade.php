@@ -631,7 +631,7 @@
     <!-- Page level plugins -->
     <script src="{{ asset('public/assets/admin/js/file-preview/details-multiple-document-upload.js') }}"></script>
     <script
-        src="https://maps.googleapis.com/maps/api/js?key={{ \App\Models\BusinessSetting::where('key', 'map_api_key')->first()->value }}&callback=initMap&libraries=marker&v=3.61">
+        src="https://maps.googleapis.com/maps/api/js?key={{ \App\Models\BusinessSetting::where('key', 'map_api_key')->first()->value }}&callback=initMap&libraries=marker&v=3.64">
     </script>
     <script>
         "use strict";
