@@ -6038,10 +6038,7 @@ textarea.form-control.h--45 {
     border: 1px solid #fbc1c1;
     outline: none;
     box-shadow: none;
-    top: 20px !important;
-    transform: translateX(7px);
     padding-inline-start: 10px;
-    left: 190px !important;
 }
 
 @media (min-width: 576px) {
@@ -6065,14 +6062,11 @@ textarea.form-control.h--45 {
     border: 1px solid #fbc1c1;
     outline: none;
     box-shadow: none;
-    top: 7px !important;
-    transform: translateX(7px);
     padding-inline-start: 10px;
-    left: 190px !important;
 }
 @media screen and (max-width: 767px){
      #map #pac-input {
-        top: 56px !important;
+        /* let Google Maps handle positioning */
     }
 }
 
