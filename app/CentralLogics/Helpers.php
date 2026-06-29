@@ -1543,6 +1543,18 @@ class Helpers
         $status = $data['status'] ?? '';
         $advertisement_id = $data['advertisement_id'] ?? '';
 
+        $type_val = $data['type'] ?? '';
+        $title = strtolower($data['title'] ?? '');
+        $description = strtolower($data['description'] ?? $data['body'] ?? '');
+
+        $is_new_order = ($type_val === 'new_order' 
+            || str_contains($title, 'new order') 
+            || str_contains($title, 'order_notification') 
+            || str_contains($description, 'new order') 
+            || str_contains($description, 'confirm to proceed'));
+
+        $sound_name = $is_new_order ? 'notification_new.wav' : 'notification.wav';
+
         $postData = [
             'message' => [
                 "token" => $fcm_token,
@@ -1576,7 +1588,7 @@ class Helpers
                 "apns" => [
                     "payload" => [
                         "aps" => [
-                            "sound" => "notification.wav"
+                            "sound" => $sound_name
                         ]
                     ]
                 ]
@@ -1610,6 +1622,18 @@ class Helpers
 //            "click_action": "'.$web_push_link.'"';
 //        }
 
+        $type_val = $data['type'] ?? $type ?? '';
+        $title = strtolower($data['title'] ?? '');
+        $description = strtolower($data['description'] ?? $data['body'] ?? '');
+
+        $is_new_order = ($type_val === 'new_order' 
+            || str_contains($title, 'new order') 
+            || str_contains($title, 'order_notification') 
+            || str_contains($description, 'new order') 
+            || str_contains($description, 'confirm to proceed'));
+
+        $sound_name = $is_new_order ? 'notification_new.wav' : 'notification.wav';
+
         if (isset($data['order_id'])) {
             $postData = [
                 'message' => [
@@ -1641,7 +1665,7 @@ class Helpers
                     "apns" => [
                         "payload" => [
                             "aps" => [
-                                "sound" => "notification.wav"
+                                "sound" => $sound_name
                             ]
                         ]
                     ]
@@ -1673,7 +1697,7 @@ class Helpers
                     "apns" => [
                         "payload" => [
                             "aps" => [
-                                "sound" => "notification.wav"
+                                "sound" => $sound_name
                             ]
                         ]
                     ]

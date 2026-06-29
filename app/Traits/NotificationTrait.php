@@ -31,6 +31,18 @@ trait NotificationTrait
 //            "click_action": "'.$web_push_link.'"';
 //        }
 
+        $type_val = $data['type'] ?? $type ?? '';
+        $title = strtolower($data['title'] ?? '');
+        $description = strtolower($data['description'] ?? $data['body'] ?? '');
+
+        $is_new_order = ($type_val === 'new_order' 
+            || str_contains($title, 'new order') 
+            || str_contains($title, 'order_notification') 
+            || str_contains($description, 'new order') 
+            || str_contains($description, 'confirm to proceed'));
+
+        $sound_name = $is_new_order ? 'notification_new.wav' : 'notification.wav';
+
         if (isset($data['order_id'])) {
             $postData = [
                 'message' => [
@@ -62,7 +74,7 @@ trait NotificationTrait
                     "apns" => [
                         "payload" => [
                             "aps" => [
-                                "sound" => "notification.wav"
+                                "sound" => $sound_name
                             ]
                         ]
                     ],
@@ -94,7 +106,7 @@ trait NotificationTrait
                     "apns" => [
                         "payload" => [
                             "aps" => [
-                                "sound" => "notification.wav"
+                                "sound" => $sound_name
                             ]
                         ]
                     ],
@@ -137,6 +149,18 @@ trait NotificationTrait
 //            $click_action = ',
 //            "click_action": "'.$web_push_link.'"';
 //        }
+        $type_val = $data['type'] ?? '';
+        $title = strtolower($data['title'] ?? '');
+        $description = strtolower($data['description'] ?? $data['body'] ?? '');
+
+        $is_new_order = ($type_val === 'new_order' 
+            || str_contains($title, 'new order') 
+            || str_contains($title, 'order_notification') 
+            || str_contains($description, 'new order') 
+            || str_contains($description, 'confirm to proceed'));
+
+        $sound_name = $is_new_order ? 'notification_new.wav' : 'notification.wav';
+
         $postData = [
             'message' => [
                 "token" => $fcm_token,
@@ -166,7 +190,7 @@ trait NotificationTrait
                 "apns" => [
                     "payload" => [
                         "aps" => [
-                            "sound" => "notification.wav"
+                            "sound" => $sound_name
                         ]
                     ]
                 ]
